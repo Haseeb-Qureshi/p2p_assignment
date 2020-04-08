@@ -1,8 +1,11 @@
 import time
 from flask import Flask, request
+from flask_cors import CORS
 from threading import Timer, Lock
 from primes import find_next_mersenne_prime
+import traceback
 import sys
+import json
 import requests
 import random
 import ipdb # TODO:REMOVE
@@ -11,7 +14,7 @@ if len(sys.argv) < 2: raise Exception("Must pass in port number")
 MY_PORT = int(sys.argv[1])
 if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 
-# Connected peers (key: port number, value: when we last heard from them)
+# Connected peers (key: port number, value: timestamp when we last heard from them)
 PEERS = {}
 
 # If passed in another peer's port, initialize that peer with no message history
@@ -48,8 +51,46 @@ BIGGEST_PRIME_SENDER = MY_PORT
 LOCK = Lock()
 
 app = Flask(__name__)
+# Enable cross-origin requests so localhost dashboard works
+CORS(app)
 
-# TODO: Put all locks into a central clearinghouse of state changes
+def respond(msg_type, msg_id, msg_source, ttl, current_hops, data):
+    if msg_type == PING: # received a ping
+        PEERS[msg_source] = time.time()
+        pass
+    elif msg_type == PONG: # received a pong
+        pass
+    elif msg_type == PRIME: # got a prime number from someone
+        pass
+
+def reply_with_pong(peer):
+	pong_message = {
+		"msg_type": PONG,
+		"ttl": 0,
+		"data": None,
+	}
+
+	send_message_to(message=pong_message, peer=peer)
+
+@app.route("/receive", methods=["POST"])
+def receive():
+	req_data = request.get_json()
+	log_message(req_data)
+
+	msg_type = req_data["msg_type"]
+	msg_id = req_data["msg_id"]
+	msg_source = req_data["msg_source"]
+	current_hops = int(req_data["current_hops"])
+	ttl = int(req_data["ttl"])
+	data = req_data["data"]
+
+	with LOCK:
+		try:
+			return respond(msg_type, msg_id, msg_source, ttl, current_hops, data)
+		except Exception as e:
+			log_error(e)
+
+	return "OK"
 
 def send_message_to(peer, message):
 	'''
@@ -103,17 +144,21 @@ def gossip_prime_number(prime):
 		send_message_to(peer=peer, message=prime_message)
 
 def log_message(message):
-	MESSAGE_HISTORY.append(message)
+	logged = message.copy()
+	logged.update({ "timestamp": time.time() })
+	MESSAGE_HISTORY.append(logged)
 
-def log_message_from(peer, message):
-	PEERS[peer] = time.monotonic() # Update latest timestamp
-	log_message(message)
+def log_error(e):
+	log_message({
+		"error": str(e),
+		"stack_trace": traceback.format_exc(),
+	})
 
 def evict_peers():
 	'''
 	Evicts any peers who we haven't heard from in the last 10 seconds.
 	'''
-	current_time = time.monotonic()
+	current_time = time.time()
 	peers_to_remove = [p for p in PEERS.keys() if current_time - PEERS[p] > 10]
 
 	with LOCK:
@@ -136,7 +181,7 @@ def message_log():
 	'''
 	Reads out the last 5 messages received by this node.
 	'''
-	return MESSAGE_HISTORY[:5]
+	return json.dumps(MESSAGE_HISTORY[:5])
 
 @app.route("/")
 def state():
@@ -150,23 +195,6 @@ def state():
 		"biggest_prime": BIGGEST_PRIME,
 		"biggest_prime_sender": BIGGEST_PRIME_SENDER,
 	}
-
-@app.route("/receive", methods=["POST"])
-def receive():
-	# Static code
-	req_data = request.get_json()
-	log_message(req_data)
-
-	msg_type = req_data["msg_type"]
-	msg_id = req_data["msg_id"]
-	msg_source = req_data["msg_source"]
-	current_hops = int(req_data["current_hops"])
-	ttl = int(req_data["ttl"])
-	data = req_data["data"]
-
-	from respond_to_message import respond
-	with LOCK:
-		return respond(msg_type, msg_id, msg_source, ttl, current_hops, data)
 
 @app.route("/enable_disconnects", methods=["POST"])
 def enable_disconnects():
