@@ -11,22 +11,19 @@ import random
 import ipdb # TODO:REMOVE
 
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
+
 MY_PORT = int(sys.argv[1])
 if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 
 # Connected peers (key: port number, value: timestamp when we last heard from them)
 PEERS = {}
 
-# If passed in another peer's port, initialize that peer with no message history
-if len(sys.argv) >= 3: PEERS[int(sys.argv[2])] = 0
-
-# Choose a human-readable name
+# Randomly choose a human-readable name
 names = open("names.txt", "r").read().split("\n")
 MY_NAME = random.choice(names)
 
 # Settings
 RANDOM_DISCONNECTS = False
-ASLEEP = False
 INFECTION_FACTOR = 2
 
 # Message types
@@ -41,7 +38,7 @@ MSG_ID = 0
 # List of all messages we've received from peers
 MESSAGE_HISTORY = []
 
-# Biggest prime we've seen so far (starts at 2)
+# Biggest Mersenne prime we've seen so far (starts at 2)
 BIGGEST_PRIME = 2
 
 # Sender of the current biggest prime (starts as self)
@@ -51,26 +48,34 @@ BIGGEST_PRIME_SENDER = MY_PORT
 LOCK = Lock()
 
 app = Flask(__name__)
+
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
 def respond(msg_type, msg_id, msg_source, ttl, current_hops, data):
-    if msg_type == PING: # received a ping
-        PEERS[msg_source] = time.time()
-        pass
-    elif msg_type == PONG: # received a pong
-        pass
-    elif msg_type == PRIME: # got a prime number from someone
-        pass
+	PEERS[msg_source] = time.time()
+	if msg_type == PING: # received a ping
+		pong_message = {
+			"msg_type": PONG,
+			"ttl": 0,
+			"data": None,
+		}
 
-def reply_with_pong(peer):
-	pong_message = {
-		"msg_type": PONG,
-		"ttl": 0,
-		"data": None,
-	}
+		send_message_to(message=pong_message, peer=peer)
+	elif msg_type == PONG: # received a pong
+		pass
+	elif msg_type == PRIME: # got a prime number from someone
+		if current_hops + 1 >= ttl:
+			return
 
-	send_message_to(message=pong_message, peer=peer)
+		message = {
+			"msg_type": PRIME,
+			"ttl": ttl,
+			"current_hops": current_hops + 1,
+			"data": data,
+		}
+		for peer in PEERS:
+			send_message_to(peer=peer, message=message)
 
 @app.route("/receive", methods=["POST"])
 def receive():
@@ -110,16 +115,19 @@ def send_message_to(peer, message):
 		message.update({
 			"msg_source": MY_PORT,
 			"msg_id": MSG_ID,
-			"current_hops": 0,
 		})
+
+		if not "current_hops" in message:
+			message["current_hops"] = 0
+
 		try:
 			req = requests.post(
 				"http://localhost:%d/receive" % peer,
 				json=message
 			)
 		except requests.exceptions.RequestException as err:
-			print(err)
 			MESSAGE_HISTORY.append(str(err))
+
 		MSG_ID += 1
 
 def send_pings_to_everyone():
@@ -214,6 +222,8 @@ class Interval(Timer):
 
 if __name__ == "__main__":
 	print("My name is %s" % MY_NAME)
+	# If passed in another peer's port, initialize that peer with no message history
+	if len(sys.argv) >= 3: PEERS[int(sys.argv[2])] = 0
 
 	# Send ping every 5 seconds
 	ping_timer = Interval(5.0, send_pings_to_everyone)
