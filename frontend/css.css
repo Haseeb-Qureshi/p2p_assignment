@@ -436,10 +436,55 @@ blockquote footer {
 }
 
 /* Custom styles */
+
+.logs {
+  /*border-radius*/
+  -webkit-border-radius: 0.5em;
+     -moz-border-radius: 0.5em;
+          border-radius: 0.5em;
+  border: 1px solid #C9C993;
+  background: #F0EE7D;
+  height: 99%;
+  width: 99%;
+  margin: 0.5% auto;
+  border: inset #555 4px;
+  background: #222;
+  /*border-radius*/
+  -webkit-border-radius: 0.5em;
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+  height: 80%;
+  width: 85%;
+  margin: 1em auto;
+  padding: 5%;
+  font-family: "Courier new", "american typewriter";
+  font-weight: 400;
+  font-size: .8em;
+  line-height: 2;
+  letter-spacing: 1.2px;
+  color: #58bf1d;
+  /* CSS3 properties */
+  -webkit-text-shadow: 0px 0px 3px rgba(88,191,29,0.5);
+  -moz-text-shadow: 0px 0px 3px rgba(88,191,29,0.5);
+  -ms-text-shadow: 0px 0px 3px rgba(88,191,29,0.5);
+  -o-text-shadow: 0px 0px 3px rgba(88,191,29,0.5);
+  text-shadow: 0px 0px 3px rgba(88,191,29,0.5);
+  overflow: auto;
+  overflow-wrap: break-word;
+}
+
 ul.logs {
   font-family: monospace;
-  font-size: 12px;
-  list-style: circle;
+  font-size: 10px;
+  list-style: none;
+  padding: 0px;
+  height: 200px;
+  overflow: scroll;
+}
+
+ul.logs li:before {
+    content: '>';
+    margin: 0 1em;
 }
 
 section.cy-wrapper {

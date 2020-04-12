@@ -81,9 +81,18 @@ function updateLogs(port) {
   let logs = [];
   LOGS[port].slice(-NUM_LOGS_TO_SHOW).forEach(log => {
     let json = JSON.parse(log);
+    let sent = !!(json["sent"]);
+    let prefix = sent ? "SENT:" : "RECEIVED:";
+    delete json["sent"];
+
     let pairs = [];
     for (let key in json) pairs.push(key + "=" + json[key]);
-    logs.push("<li>" + pairs.join(",") + "</li>");
+    logs.push([
+      "<li class=\"line\">",
+      prefix,
+      pairs.join(","),
+      "</li>"
+    ].join(""));
   });
   $("ul#logs-node" + port % 5000).html(logs.join(""));
 }

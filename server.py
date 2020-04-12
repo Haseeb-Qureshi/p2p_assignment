@@ -1,8 +1,8 @@
-import time
 from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer, Lock
 from primes import find_next_mersenne_prime
+import time
 import traceback
 import sys
 import json
@@ -32,9 +32,6 @@ PONG = "PONG"
 PRIME = "PRIME"
 MESSAGE_TYPES = set([PING, PONG, PRIME])
 
-# Monotonically increasing message counter
-MSG_ID = 0
-
 # List of all messages we've received from peers
 MESSAGE_HISTORY = []
 
@@ -52,8 +49,19 @@ app = Flask(__name__)
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
-def respond(msg_type, msg_id, msg_source, ttl, current_hops, data):
-	PEERS[msg_source] = time.time()
+# Global state object for reading and altering state
+STATE = {
+	"name": MY_NAME,
+	"port": MY_PORT,
+	"peers": PEERS,
+	"biggest_prime": 2, # Biggest Mersenne prime we've seen so far (starts at 2)
+	"biggest_prime_sender": MY_PORT, # Sender of the current biggest prime (starts as self)
+	"msg_id": 0, # Monotonically increasing message counter
+}
+
+def respond(msg_type, msg_id, msg_source, ttl, data):
+	STATE["peers"][msg_source] = time.time()
+
 	if msg_type == PING: # received a ping
 		pong_message = {
 			"msg_type": PONG,
@@ -61,39 +69,40 @@ def respond(msg_type, msg_id, msg_source, ttl, current_hops, data):
 			"data": None,
 		}
 
-		send_message_to(message=pong_message, peer=peer)
+		send_message_to(message=pong_message, peer=msg_source)
 	elif msg_type == PONG: # received a pong
 		pass
 	elif msg_type == PRIME: # got a prime number from someone
-		if current_hops + 1 >= ttl:
-			return
+		if data > STATE["biggest_prime"]: # new biggest prime
+			STATE["biggest_prime"] = data
+			STATE["biggest_prime_sender"] = msg_source
+
+		if ttl == 0: return
 
 		message = {
 			"msg_type": PRIME,
-			"ttl": ttl,
-			"current_hops": current_hops + 1,
+			"ttl": ttl - 1,
 			"data": data,
 		}
-		for peer in PEERS:
+
+		for peer in PEERS.keys():
 			send_message_to(peer=peer, message=message)
 
 @app.route("/receive", methods=["POST"])
 def receive():
 	req_data = request.get_json()
-	log_message(req_data)
+	log_message(message=req_data, sent=False)
 
 	msg_type = req_data["msg_type"]
 	msg_id = req_data["msg_id"]
 	msg_source = req_data["msg_source"]
-	current_hops = int(req_data["current_hops"])
 	ttl = int(req_data["ttl"])
 	data = req_data["data"]
 
-	with LOCK:
-		try:
-			return respond(msg_type, msg_id, msg_source, ttl, current_hops, data)
-		except Exception as e:
-			log_error(e)
+	try:
+		respond(msg_type, msg_id, msg_source, ttl, data)
+	except Exception as e:
+		log_error(e)
 
 	return "OK"
 
@@ -103,7 +112,6 @@ def send_message_to(peer, message):
 	automatically added. Only one message is sent out at a time to avoid
 	race conditions.
 	'''
-	global MSG_ID
 	if type(peer) is not int:
 		raise TypeError("Tried to send a message to non-integer: %d" % peer)
 	if not "ttl" in message:
@@ -111,24 +119,24 @@ def send_message_to(peer, message):
 	if not "msg_type" in message or message["msg_type"] not in MESSAGE_TYPES:
 		raise Exception("Must have a valid msg_type")
 
-	with LOCK:
-		message.update({
-			"msg_source": MY_PORT,
-			"msg_id": MSG_ID,
-		})
+	message.update({
+		"msg_source": STATE["port"],
+		"msg_id": STATE["msg_id"],
+	})
 
-		if not "current_hops" in message:
-			message["current_hops"] = 0
+	log_message(message=message, sent=True)
 
-		try:
-			req = requests.post(
-				"http://localhost:%d/receive" % peer,
-				json=message
-			)
-		except requests.exceptions.RequestException as err:
-			MESSAGE_HISTORY.append(str(err))
+	# with LOCK:
 
-		MSG_ID += 1
+	try:
+		req = requests.post(
+			"http://localhost:%d/receive" % peer,
+			json=message
+		)
+	except requests.exceptions.RequestException as e:
+		log_error(e)
+
+	STATE["msg_id"] += 1
 
 def send_pings_to_everyone():
 	ping = {
@@ -151,37 +159,39 @@ def gossip_prime_number(prime):
 	for peer in random.sample(PEERS.keys(), num_peers_to_gossip_to):
 		send_message_to(peer=peer, message=prime_message)
 
-def log_message(message):
+def log_message(message, sent):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
+	if sent: logged.update({ "sent": True })
 	MESSAGE_HISTORY.append(logged)
 
 def log_error(e):
-	log_message({
+	log_message(message={
 		"error": str(e),
 		"stack_trace": traceback.format_exc(),
-	})
+	}, sent=False)
 
 def evict_peers():
 	'''
 	Evicts any peers who we haven't heard from in the last 10 seconds.
 	'''
 	current_time = time.time()
-	peers_to_remove = [p for p in PEERS.keys() if current_time - PEERS[p] > 10]
+	peers_to_remove = [p for p in STATE["peers"].keys() if current_time - STATE["peers"][p] > 10]
 
 	with LOCK:
 		for peer in peers_to_remove:
-			PEERS.pop(peer)
+			STATE["peers"].pop(peer)
 
 def generate_next_mersenne_prime():
 	'''
 	Generates the next Mersenne prime and gossips it to our peers.
-	Runs once every 10 seconds.
+	Runs once every 10 seconds, but then waits a random period <5s to stagger node timing.
 	'''
-	global BIGGEST_PRIME, BIGGEST_PRIME_SENDER
-	new_prime = find_next_mersenne_prime(BIGGEST_PRIME)
-	BIGGEST_PRIME = new_prime
-	BIGGEST_PRIME_SENDER = MY_PORT
+	time.sleep(random.uniform(0, 5))
+
+	new_prime = find_next_mersenne_prime(STATE["biggest_prime"])
+	STATE["biggest_prime"] = new_prime
+	STATE["biggest_prime_sender"] = MY_PORT
 	gossip_prime_number(new_prime)
 
 @app.route("/message_log")
@@ -189,20 +199,14 @@ def message_log():
 	'''
 	Reads out the last 5 messages received by this node.
 	'''
-	return json.dumps(MESSAGE_HISTORY[:5])
+	return json.dumps(MESSAGE_HISTORY[-5:])
 
 @app.route("/")
 def state():
 	'''
 	Reads out the current state of this node.
 	'''
-	return {
-		"name": MY_NAME,
-		"port": MY_PORT,
-		"peers": PEERS,
-		"biggest_prime": BIGGEST_PRIME,
-		"biggest_prime_sender": BIGGEST_PRIME_SENDER,
-	}
+	return STATE
 
 @app.route("/enable_disconnects", methods=["POST"])
 def enable_disconnects():
@@ -223,7 +227,7 @@ class Interval(Timer):
 if __name__ == "__main__":
 	print("My name is %s" % MY_NAME)
 	# If passed in another peer's port, initialize that peer with no message history
-	if len(sys.argv) >= 3: PEERS[int(sys.argv[2])] = 0
+	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
 	# Send ping every 5 seconds
 	ping_timer = Interval(5.0, send_pings_to_everyone)
