@@ -1,12 +1,9 @@
-<!-- MVP.css quickstart template: https://github.com/andybrewer/mvp/ -->
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <link rel="stylesheet" href="css.css">
     <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/springy/2.8.0/springy.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/springy/2.8.0/springyui.min.js"></script>
 
     <meta charset="utf-8">
     <meta name="description" content="My description">
@@ -22,121 +19,39 @@
                 <h2>Nodes</h2>
             </header>
             <aside id="node0">
-              <h3 id="name-node0">Node name</h3>
-              <ul id="state-node0"></ul>
+              <h3 class="node-name" id="name-node0">Node name</h3>
+              <button class="btn" id="sleep0">Sleep</button>
+              <ul class="node-state" id="state-node0"></ul>
               <p>Node logs</p>
               <ul class="logs" id="logs-node0">
               </ul>
             </aside>
             <aside id="node1">
-                <h3 id="name-node1">Node name</h3>
-                <ul id="state-node1"></ul>
+                <h3 class="node-name" id="name-node1">Node name</h3>
+                <button class="btn" id="sleep1">Sleep</button>
+                <ul class="node-state" id="state-node1"></ul>
                 <p>Node logs</p>
                 <ul class="logs" id="logs-node1">
                 </ul>
             </aside>
             <aside id="node2">
-                <h3 id="name-node2">Node name</h3>
-                <ul id="state-node2"></ul>
+                <h3 class="node-name" id="name-node2">Node name</h3>
+                <button class="btn" id="sleep2">Sleep</button>
+                <ul class="node-state" id="state-node2"></ul>
                 <p>Node logs</p>
                 <ul class="logs" id="logs-node2">
                 </ul>
             </aside>
             <aside id="node3">
-                <h3 id="name-node3">Node name</h3>
-                <ul id="state-node3"></ul>
+                <h3 class="node-name" id="name-node3">Node name</h3>
+                <button class="btn" id="sleep3">Sleep</button>
+                <ul class="node-state" id="state-node3"></ul>
                 <p>Node logs</p>
                 <ul class="logs" id="logs-node3">
                 </ul>
             </aside>
         </section>
-        <hr>
-        <section class="cy-wrapper">
-          <canvas class="cy-wrapper" id="springy">
-            <!-- Springy graph goes here! -->
-          </canvas>
-        </section>
-        <hr>
-        <section>
-            <blockquote>
-                "Quote"
-                <footer><i>- Attribution</i></footer>
-            </blockquote>
-        </section>
-        <hr>
-        <div>
-            <table>
-                <thead>
-                    <tr>
-                        <th></th>
-                        <th>Col A</th>
-                        <th>Col B</th>
-                        <th>Col C</th>
-                    </tr>
-                </thead>
-                <tr>
-                    <td>Row 1</td>
-                    <td>Cell A1</td>
-                    <td>Cell B1</td>
-                    <td>Cell C1</td>
-                </tr>
-                <tr>
-                    <td>Row 2</td>
-                    <td>Cell A2</td>
-                    <td>Cell B2</td>
-                    <td>Cell C2</td>
-                </tr>
-            </table>
-        </div>
-        <hr>
-        <article>
-            <h2>Left-aligned header</h2>
-            <p>Left-aligned paragraph</p>
-            <aside>
-                <p>Article callout</p>
-            </aside>
-            <ul>
-                <li>List item 1</li>
-                <li>List item 2</li>
-            </ul>
-        </article>
-        <hr>
-        <div>
-            <details>
-                <summary>Expanable title</summary>
-                <p>Revealed content</p>
-            </details>
-            <details>
-                <summary>Another expanable title</summary>
-                <p>More revealed content</p>
-            </details>
-            <br><br>
-            <pre>
-                <code>
-                    // code sample
-                </code>
-            </pre>
-        </div>
-        <hr>
-        <section>
-            <form>
-                <header>
-                    <h2>Form title</h2>
-                </header>
-                <label for="input1">Input label:</label>
-                <input type="text" id="input1" name="input1" size="20" placeholder="Input1">
-                <label for="select1">Select label:</label>
-                <select id="select1">
-                    <option value="option1">option1</option>
-                    <option value="option2">option2</option>
-                </select>
-                <label for="textarea1">Textarea label:</label>
-                <textarea cols="40" rows="5" id="textarea1"></textarea>
-                <button type="submit">Submit</button>
-            </form>
-        </section>
     </main>
 </body>
 
 <script src="updater.js"></script>
-<script src="springy_layout.js"></script>

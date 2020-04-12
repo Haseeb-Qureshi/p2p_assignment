@@ -265,7 +265,7 @@ button {
     font-weight: bold;
     line-height: var(--line-height);
     margin: 1.5rem 0 0.5rem 0;
-    padding: 1rem 2rem;
+    padding: 0rem 2rem;
 }
 
 button {
@@ -485,6 +485,19 @@ ul.logs {
 ul.logs li:before {
     content: '>';
     margin: 0 1em;
+}
+
+button.btn {
+  display: flex;
+  float: right;
+}
+
+h3.node-name {
+  float: left;
+}
+
+ul.node-state {
+  clear: both;
 }
 
 section.cy-wrapper {

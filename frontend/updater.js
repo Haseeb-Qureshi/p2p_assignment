@@ -1,5 +1,4 @@
-// const PORTS = [5000, 5001, 5002, 5003];
-const PORTS = [5001, 5002]; // FIX THIS
+const PORTS = [5000, 5001, 5002, 5003];
 const LOGS = {
   5000: [],
   5001: [],
@@ -12,35 +11,53 @@ const STATES = {
   5002: {},
   5003: {},
 };
-const NUM_LOGS_TO_SHOW = 10;
+const IS_ASLEEP = {
+  5000: false,
+  5001: false,
+  5002: false,
+  5003: false,
+};
+const NUM_LOGS_TO_SHOW = 20;
 
-const graph = new Springy.Graph();
+[0, 1, 2, 3].forEach(node => {
+  $(`#sleep${node}`).click(() => {
+    let port = 5000 + node;
 
-jQuery(() => {
-  var springy = jQuery('#springy').springy({
-    graph: graph
+    if (IS_ASLEEP[port]) {
+      $.post(`http://localhost:${port}/wake_up`);
+      $(`#sleep${node}`).text("Sleep")
+    } else {
+      $.post(`http://localhost:${port}/sleep`);
+      $(`#sleep${node}`).text("Wake up")
+    }
+    IS_ASLEEP[port] = !IS_ASLEEP[port];
   });
 });
 
+function nameify(port) {
+  return `${port} (${STATES[port].name})`
+}
+
+function formatPeers(obj) {
+
+}
+
 function setState(json, port) {
-  if (Object.keys(STATES[port]).length === 0) {
-    STATES[port] = json;
-    updateGraph(port);
-  }
   // If no changes in state, don't change the DOM.
   if (STATES[port] === json) return;
+  // Set new state
   STATES[port] = json;
 
   let html = [];
   html.push("<strong>Peers:</strong> " + JSON.stringify(json["peers"]));
-  html.push("<strong>Port:</strong> " + JSON.stringify(json["port"]));
-  html.push("<strong>Biggest prime:</strong> " + JSON.stringify(json["biggest_prime"]));
-  html.push("<strong>Biggest prime sender:</strong> " + JSON.stringify(json["biggest_prime_sender"]));
+  html.push("<strong>Port:</strong> " + json["port"]);
+  html.push("<strong>Biggest Mersenne prime:</strong> " + json["biggest_prime"]);
+  html.push("<strong>Biggest Mersenne prime sender:</strong> " + nameify(json["biggest_prime_sender"]));
   html = html.map(el => "<li>" + el + "</li>" );
 
   let num = port % 5000;
   $("ul#state-node" + num).html(html.join(""));
-  $("h3#name-node" + num).text(json["name"]);
+  $("h3#name-node" + num).text(nameify(port));
 }
 
 setInterval(() => {
@@ -48,8 +65,7 @@ setInterval(() => {
     $.getJSON("http://localhost:" + port)
       .done((json) => setState(json, port))
       .fail((jqxhr, textStatus, err) => {
-        console.log([jqxhr, textStatus, err]);
-        $("ul#state-node" + num).html("Node is not responding")
+        $("ul#state-node" + (port - 5000)).text("Node is not responding!")
       });
   });
 }, 1000);
@@ -59,7 +75,7 @@ setInterval(() => {
   PORTS.forEach((port) => {
     $.getJSON("http://localhost:" + port + "/message_log")
       .done((json) => {
-        // dedup logs and make sure there are only 5; use hash as key?
+        // dedup logs
         let shouldUpdate = false;
         json.forEach(log => {
           let s = JSON.stringify(log);
@@ -81,9 +97,9 @@ function updateLogs(port) {
   let logs = [];
   LOGS[port].slice(-NUM_LOGS_TO_SHOW).forEach(log => {
     let json = JSON.parse(log);
-    let sent = !!(json["sent"]);
-    let prefix = sent ? "SENT:" : "RECEIVED:";
-    delete json["sent"];
+    let received = !!(json["received"]);
+    let prefix = received ? "RECEIVED:" : "SENT:";
+    delete json["received"];
 
     let pairs = [];
     for (let key in json) pairs.push(key + "=" + json[key]);
@@ -94,12 +110,5 @@ function updateLogs(port) {
       "</li>"
     ].join(""));
   });
-  $("ul#logs-node" + port % 5000).html(logs.join(""));
-}
-
-function updateGraph(port) {
-  graph.addNodes(STATES[port].name);
-  Object.keys(STATES[port].peers).forEach(peer => {
-    graph.addEdges([STATES[port].name, STATES[peer].name], { color: '#000000' });
-  });
+  $("ul#logs-node" + port % 5000).html(logs.reverse().join(""));
 }

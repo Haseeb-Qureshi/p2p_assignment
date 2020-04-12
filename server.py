@@ -1,8 +1,9 @@
 from flask import Flask, request
 from flask_cors import CORS
-from threading import Timer, Lock
+from threading import Timer, RLock
 from primes import find_next_mersenne_prime
 import time
+import functools
 import traceback
 import sys
 import json
@@ -14,9 +15,6 @@ if len(sys.argv) < 2: raise Exception("Must pass in port number")
 
 MY_PORT = int(sys.argv[1])
 if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
-
-# Connected peers (key: port number, value: timestamp when we last heard from them)
-PEERS = {}
 
 # Randomly choose a human-readable name
 names = open("names.txt", "r").read().split("\n")
@@ -32,34 +30,37 @@ PONG = "PONG"
 PRIME = "PRIME"
 MESSAGE_TYPES = set([PING, PONG, PRIME])
 
-# List of all messages we've received from peers
-MESSAGE_HISTORY = []
-
-# Biggest Mersenne prime we've seen so far (starts at 2)
-BIGGEST_PRIME = 2
-
-# Sender of the current biggest prime (starts as self)
-BIGGEST_PRIME_SENDER = MY_PORT
-
-# Lock to avoid race conditions
-LOCK = Lock()
+# Only do things if the node is awake
+AWAKE = True
 
 app = Flask(__name__)
 
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
-# Global state object for reading and altering state
+# List of all messages we've received from peers
+MESSAGE_HISTORY = []
+
+# Global state object for reading and altering state: you should read and write to this
 STATE = {
 	"name": MY_NAME,
 	"port": MY_PORT,
-	"peers": PEERS,
+	"peers": {}, # (key: port number, value: timestamp when we last heard from them)
 	"biggest_prime": 2, # Biggest Mersenne prime we've seen so far (starts at 2)
 	"biggest_prime_sender": MY_PORT, # Sender of the current biggest prime (starts as self)
-	"msg_id": 0, # Monotonically increasing message counter
+	"msg_id": 0, # Monotonically increasing message counter (we'll automatically increment this for you)
 }
 
-def respond(msg_type, msg_id, msg_source, ttl, data):
+def only_if_awake(f):
+	@functools.wraps(f)
+	def if_awake(*args, **kwargs):
+		if AWAKE:
+			return f(*args, **kwargs)
+		else:
+			return "Asleep"
+	return if_awake
+
+def respond(msg_type, msg_id, msg_forwarder, msg_source, ttl, data):
 	STATE["peers"][msg_source] = time.time()
 
 	if msg_type == PING: # received a ping
@@ -85,27 +86,30 @@ def respond(msg_type, msg_id, msg_source, ttl, data):
 			"data": data,
 		}
 
-		for peer in PEERS.keys():
+		for peer in STATE["peers"].keys():
 			send_message_to(peer=peer, message=message)
 
+@only_if_awake
 @app.route("/receive", methods=["POST"])
 def receive():
 	req_data = request.get_json()
-	log_message(message=req_data, sent=False)
+	log_message(message=req_data, received=True)
 
 	msg_type = req_data["msg_type"]
 	msg_id = req_data["msg_id"]
+	msg_forwarder = request.getRemoteAddr()
 	msg_source = req_data["msg_source"]
 	ttl = int(req_data["ttl"])
 	data = req_data["data"]
 
 	try:
-		respond(msg_type, msg_id, msg_source, ttl, data)
+		respond(msg_type, msg_id, msg_forwarder, msg_source, ttl, data)
 	except Exception as e:
 		log_error(e)
 
 	return "OK"
 
+@only_if_awake
 def send_message_to(peer, message):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
@@ -124,9 +128,7 @@ def send_message_to(peer, message):
 		"msg_id": STATE["msg_id"],
 	})
 
-	log_message(message=message, sent=True)
-
-	# with LOCK:
+	log_message(message=message, received=False)
 
 	try:
 		req = requests.post(
@@ -138,6 +140,7 @@ def send_message_to(peer, message):
 
 	STATE["msg_id"] += 1
 
+@only_if_awake
 def send_pings_to_everyone():
 	ping = {
 		"msg_type": PING,
@@ -145,9 +148,10 @@ def send_pings_to_everyone():
 		"data": None,
 	}
 
-	for peer in PEERS.keys():
+	for peer in STATE["peers"].keys():
 		send_message_to(peer=peer, message=ping)
 
+@only_if_awake
 def gossip_prime_number(prime):
 	prime_message = {
 		"msg_type": PRIME,
@@ -155,22 +159,23 @@ def gossip_prime_number(prime):
 		"data": prime,
 	}
 
-	num_peers_to_gossip_to = min(INFECTION_FACTOR, len(PEERS))
-	for peer in random.sample(PEERS.keys(), num_peers_to_gossip_to):
+	k = min(INFECTION_FACTOR, len(STATE["peers"]))
+	for peer in random.sample(STATE["peers"].keys(), k):
 		send_message_to(peer=peer, message=prime_message)
 
-def log_message(message, sent):
+def log_message(message, received):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
-	if sent: logged.update({ "sent": True })
+	if received: logged.update({ "received": True })
 	MESSAGE_HISTORY.append(logged)
 
 def log_error(e):
 	log_message(message={
 		"error": str(e),
 		"stack_trace": traceback.format_exc(),
-	}, sent=False)
+	}, received=True)
 
+@only_if_awake
 def evict_peers():
 	'''
 	Evicts any peers who we haven't heard from in the last 10 seconds.
@@ -178,10 +183,10 @@ def evict_peers():
 	current_time = time.time()
 	peers_to_remove = [p for p in STATE["peers"].keys() if current_time - STATE["peers"][p] > 10]
 
-	with LOCK:
-		for peer in peers_to_remove:
-			STATE["peers"].pop(peer)
+	for peer in peers_to_remove:
+		STATE["peers"].pop(peer)
 
+@only_if_awake
 def generate_next_mersenne_prime():
 	'''
 	Generates the next Mersenne prime and gossips it to our peers.
@@ -208,16 +213,23 @@ def state():
 	'''
 	return STATE
 
-@app.route("/enable_disconnects", methods=["POST"])
-def enable_disconnects():
-	global RANDOM_DISCONNECTS
-	RANDOM_DISCONNECTS = True
+@app.route("/sleep", methods=["POST"])
+def sleep():
+	global AWAKE
+	AWAKE = False
 	return "OK"
 
-@app.route("/disable_disconnects", methods=["POST"])
-def disable_disconnects():
-	global RANDOM_DISCONNECTS
-	RANDOM_DISCONNECTS = False
+@app.route("/wake_up", methods=["POST"])
+def wake_up():
+	global AWAKE
+	AWAKE = True
+	return "OK"
+
+@app.route("/dump")
+def dump():
+	import faulthandler
+	faulthandler.enable()
+	faulthandler.dump_traceback(file=open('tracestack.log', 'w+'), all_threads=True)
 	return "OK"
 
 class Interval(Timer):
