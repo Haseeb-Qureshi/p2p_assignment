@@ -3,8 +3,6 @@
 
 <head>
     <link rel="stylesheet" href="css.css">
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-
     <meta charset="utf-8">
     <meta name="description" content="My description">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,35 +21,53 @@
               <button class="btn" id="sleep0">Sleep</button>
               <ul class="node-state" id="state-node0"></ul>
               <p>Node logs</p>
+              <button class="btn-clipboard" data-clipboard-target="#logs-node0">
+                <img src="clippy.svg" width="13" alt="Copy to clipboard">
+              </button>
               <ul class="logs" id="logs-node0">
               </ul>
+              <div id="errors0"></div>
             </aside>
             <aside id="node1">
                 <h3 class="node-name" id="name-node1">Node name</h3>
                 <button class="btn" id="sleep1">Sleep</button>
                 <ul class="node-state" id="state-node1"></ul>
                 <p>Node logs</p>
+                <button class="btn-clipboard" data-clipboard-target="#logs-node1">
+                  <img src="clippy.svg" width="13" alt="Copy to clipboard">
+                </button>
                 <ul class="logs" id="logs-node1">
                 </ul>
+                <div id="errors1"></div>
             </aside>
             <aside id="node2">
                 <h3 class="node-name" id="name-node2">Node name</h3>
                 <button class="btn" id="sleep2">Sleep</button>
                 <ul class="node-state" id="state-node2"></ul>
                 <p>Node logs</p>
+                <button class="btn-clipboard" data-clipboard-target="#logs-node2">
+                  <img src="clippy.svg" width="13" alt="Copy to clipboard">
+                </button>
                 <ul class="logs" id="logs-node2">
                 </ul>
+                <div id="errors2"></div>
             </aside>
             <aside id="node3">
                 <h3 class="node-name" id="name-node3">Node name</h3>
                 <button class="btn" id="sleep3">Sleep</button>
                 <ul class="node-state" id="state-node3"></ul>
                 <p>Node logs</p>
+                <button class="btn-clipboard" data-clipboard-target="#logs-node3">
+                  <img src="clippy.svg" width="13" alt="Copy to clipboard">
+                </button>
                 <ul class="logs" id="logs-node3">
                 </ul>
+                <div id="errors3"></div>
             </aside>
         </section>
     </main>
 </body>
 
+<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"></script>
 <script src="updater.js"></script>

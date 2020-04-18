@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from threading import Timer, RLock
+from threading import Timer
 from primes import find_next_mersenne_prime
 import time
 import functools
@@ -20,8 +20,7 @@ if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 names = open("names.txt", "r").read().split("\n")
 MY_NAME = random.choice(names)
 
-# Settings
-RANDOM_DISCONNECTS = False
+# Number of peers to gossip to per round
 INFECTION_FACTOR = 2
 
 # Message types
@@ -38,8 +37,11 @@ app = Flask(__name__)
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
-# List of all messages we've received from peers
-MESSAGE_HISTORY = []
+# List of all messages we've seen before (so as not to re-transmit duplicates)
+RECEIVED_MESSAGES = set()
+
+# List of logs
+LOGS = []
 
 # Global state object for reading and altering state: you should read and write to this
 STATE = {
@@ -51,6 +53,44 @@ STATE = {
 	"msg_id": 0, # Monotonically increasing message counter (we'll automatically increment this for you)
 }
 
+def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
+	if (msg_id, msg_originator) in RECEIVED_MESSAGES:
+		return
+	else:
+		RECEIVED_MESSAGES.add((msg_id, msg_originator))
+
+	if msg_originator == MY_PORT: return
+
+	STATE["peers"][msg_forwarder] = time.time()
+
+	if msg_type == PING: # received a ping
+		pong_message = {
+			"msg_type": PONG,
+			"ttl": 0,
+			"data": None,
+		}
+		send_message_to(message=pong_message, peer=msg_originator, forwarded=False)
+	elif msg_type == PONG: # received a pong
+		pass
+	elif msg_type == PRIME: # got a prime number from someone
+		if data > STATE["biggest_prime"]: # new biggest prime
+			STATE["biggest_prime"] = data
+			STATE["biggest_prime_sender"] = msg_originator
+
+		STATE["peers"][msg_originator] = time.time()
+
+		if ttl == 0: return
+
+		message = {
+			"msg_type": PRIME,
+			"ttl": ttl - 1,
+			"data": data,
+			"msg_originator": msg_originator,
+		}
+
+		for peer in STATE["peers"].keys():
+			send_message_to(peer=peer, message=message, forwarded=True)
+
 def only_if_awake(f):
 	@functools.wraps(f)
 	def if_awake(*args, **kwargs):
@@ -60,35 +100,6 @@ def only_if_awake(f):
 			return "Asleep"
 	return if_awake
 
-def respond(msg_type, msg_id, msg_forwarder, msg_source, ttl, data):
-	STATE["peers"][msg_source] = time.time()
-
-	if msg_type == PING: # received a ping
-		pong_message = {
-			"msg_type": PONG,
-			"ttl": 0,
-			"data": None,
-		}
-
-		send_message_to(message=pong_message, peer=msg_source)
-	elif msg_type == PONG: # received a pong
-		pass
-	elif msg_type == PRIME: # got a prime number from someone
-		if data > STATE["biggest_prime"]: # new biggest prime
-			STATE["biggest_prime"] = data
-			STATE["biggest_prime_sender"] = msg_source
-
-		if ttl == 0: return
-
-		message = {
-			"msg_type": PRIME,
-			"ttl": ttl - 1,
-			"data": data,
-		}
-
-		for peer in STATE["peers"].keys():
-			send_message_to(peer=peer, message=message)
-
 @only_if_awake
 @app.route("/receive", methods=["POST"])
 def receive():
@@ -96,21 +107,21 @@ def receive():
 	log_message(message=req_data, received=True)
 
 	msg_type = req_data["msg_type"]
-	msg_id = req_data["msg_id"]
-	msg_forwarder = request.getRemoteAddr()
-	msg_source = req_data["msg_source"]
+	msg_id = int(req_data["msg_id"])
+	msg_forwarder = int(req_data["msg_forwarder"])
+	msg_originator = int(req_data["msg_originator"])
 	ttl = int(req_data["ttl"])
 	data = req_data["data"]
 
 	try:
-		respond(msg_type, msg_id, msg_forwarder, msg_source, ttl, data)
+		respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data)
 	except Exception as e:
 		log_error(e)
 
 	return "OK"
 
 @only_if_awake
-def send_message_to(peer, message):
+def send_message_to(peer, message, forwarded):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
 	automatically added. Only one message is sent out at a time to avoid
@@ -122,11 +133,16 @@ def send_message_to(peer, message):
 		raise Exception("Must have a TTL")
 	if not "msg_type" in message or message["msg_type"] not in MESSAGE_TYPES:
 		raise Exception("Must have a valid msg_type")
+	if forwarded and "msg_originator" not in message:
+		raise Exception("Must have msg_originator in message if message was forwarded")
 
 	message.update({
-		"msg_source": STATE["port"],
+		"msg_forwarder": STATE["port"],
 		"msg_id": STATE["msg_id"],
 	})
+
+	# If message originates from us, include that in the message
+	if not forwarded: message.update({ "msg_originator": STATE["port"] })
 
 	log_message(message=message, received=False)
 
@@ -136,6 +152,8 @@ def send_message_to(peer, message):
 			json=message
 		)
 	except requests.exceptions.RequestException as e:
+		log_error(e)
+	except ConnectionResetError as e:
 		log_error(e)
 
 	STATE["msg_id"] += 1
@@ -149,7 +167,7 @@ def send_pings_to_everyone():
 	}
 
 	for peer in STATE["peers"].keys():
-		send_message_to(peer=peer, message=ping)
+		send_message_to(peer=peer, message=ping, forwarded=False)
 
 @only_if_awake
 def gossip_prime_number(prime):
@@ -161,13 +179,13 @@ def gossip_prime_number(prime):
 
 	k = min(INFECTION_FACTOR, len(STATE["peers"]))
 	for peer in random.sample(STATE["peers"].keys(), k):
-		send_message_to(peer=peer, message=prime_message)
+		send_message_to(peer=peer, message=prime_message, forwarded=False)
 
 def log_message(message, received):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
 	if received: logged.update({ "received": True })
-	MESSAGE_HISTORY.append(logged)
+	LOGS.append(logged)
 
 def log_error(e):
 	log_message(message={
@@ -204,7 +222,7 @@ def message_log():
 	'''
 	Reads out the last 5 messages received by this node.
 	'''
-	return json.dumps(MESSAGE_HISTORY[-5:])
+	return json.dumps(LOGS[-5:])
 
 @app.route("/")
 def state():
@@ -223,13 +241,6 @@ def sleep():
 def wake_up():
 	global AWAKE
 	AWAKE = True
-	return "OK"
-
-@app.route("/dump")
-def dump():
-	import faulthandler
-	faulthandler.enable()
-	faulthandler.dump_traceback(file=open('tracestack.log', 'w+'), all_threads=True)
 	return "OK"
 
 class Interval(Timer):

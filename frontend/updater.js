@@ -19,6 +19,8 @@ const IS_ASLEEP = {
 };
 const NUM_LOGS_TO_SHOW = 20;
 
+new ClipboardJS('.btn-clipboard');
+
 [0, 1, 2, 3].forEach(node => {
   $(`#sleep${node}`).click(() => {
     let port = 5000 + node;
@@ -38,8 +40,16 @@ function nameify(port) {
   return `${port} (${STATES[port].name})`
 }
 
-function formatPeers(obj) {
+function timeify(timestamp) {
+  return `${Math.round(Date.now() / 1000 - timestamp)} seconds ago`
+}
 
+function formatPeers(obj) {
+  let s = "";
+  for (let peer in obj) {
+    s += `${nameify(peer)}: ${timeify(obj[peer])}</br>`
+  }
+  return s;
 }
 
 function setState(json, port) {
@@ -49,8 +59,7 @@ function setState(json, port) {
   STATES[port] = json;
 
   let html = [];
-  html.push("<strong>Peers:</strong> " + JSON.stringify(json["peers"]));
-  html.push("<strong>Port:</strong> " + json["port"]);
+  html.push("<strong>Peers:</strong> " + formatPeers(json["peers"]));
   html.push("<strong>Biggest Mersenne prime:</strong> " + json["biggest_prime"]);
   html.push("<strong>Biggest Mersenne prime sender:</strong> " + nameify(json["biggest_prime_sender"]));
   html = html.map(el => "<li>" + el + "</li>" );
@@ -95,20 +104,32 @@ setInterval(() => {
 
 function updateLogs(port) {
   let logs = [];
+  let errors = [];
   LOGS[port].slice(-NUM_LOGS_TO_SHOW).forEach(log => {
     let json = JSON.parse(log);
     let received = !!(json["received"]);
     let prefix = received ? "RECEIVED:" : "SENT:";
+    let isError = "error" in json;
     delete json["received"];
 
     let pairs = [];
     for (let key in json) pairs.push(key + "=" + json[key]);
-    logs.push([
-      "<li class=\"line\">",
-      prefix,
-      pairs.join(","),
-      "</li>"
-    ].join(""));
+
+    if (isError) {
+      errors.push([
+        "<li class=\"line\">",
+        pairs.join(","),
+        "</li>"
+      ].join(""));
+      $("div#errors" + port % 5000).html(`<div class="alert alert-danger alert-dismissable">${errors.reverse().join("")}</div>`);
+    } else {
+      logs.push([
+        "<li class=\"line\">",
+        prefix,
+        pairs.join(","),
+        "</li>"
+      ].join(""));
+    }
   });
   $("ul#logs-node" + port % 5000).html(logs.reverse().join(""));
 }
