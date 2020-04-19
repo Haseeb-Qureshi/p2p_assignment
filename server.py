@@ -50,42 +50,23 @@ STATE = {
 }
 
 def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
-	if (msg_id, msg_originator) in RECEIVED_MESSAGES:
-		return
-	else:
-		RECEIVED_MESSAGES.add((msg_id, msg_originator))
+	'''
+	This is where the meat of the P2P protocol happens.
+	Upon receiving a message from a peer, what does each node do?
 
-	if msg_originator == MY_PORT: return
+	Args:
+        msg_type (str): "PING", "PONG", or "PRIME"
+        msg_id (int): The auto-incrementing message counter for each node
+		msg_forwarder (int): The port of the immediate node that sent you this message
+		msg_originator (int): The port of the node that created the original message (for a 0 TTL point-to-point message, this will be the same as the forwarder)
+		ttl (int): Time-to-live—the number of hops remaining in the lifetime of this message until it should be dropped. A 0 TTL message should not be forwarded any further.
+		data (int or None): The data in the message payload. For PINGs and PONGs, this will be None. For a PRIME message, the data field will contain the prime number.
 
-	update_last_heard_from(msg_forwarder)
-
-	if msg_type == PING: # received a ping
-		pong_message = {
-			"msg_type": PONG,
-			"ttl": 0,
-			"data": None,
-		}
-		send_message_to(message=pong_message, peer=msg_originator, forwarded=False)
-	elif msg_type == PONG: # received a pong
-		pass
-	elif msg_type == PRIME: # got a prime number from someone
-		if data > STATE["biggest_prime"]: # new biggest prime
-			STATE["biggest_prime"] = data
-			STATE["biggest_prime_sender"] = msg_originator
-
-		STATE["peers"][msg_originator] = time.time()
-
-		if ttl == 0: return
-
-		message = {
-			"msg_type": PRIME,
-			"ttl": ttl - 1,
-			"data": data,
-			"msg_originator": msg_originator,
-		}
-
-		for peer in [*STATE["peers"]]:
-			send_message_to(peer=peer, message=message, forwarded=True)
+    Returns:
+        Nothing
+	'''
+	# TODO: Your code here!
+	pass
 
 def update_last_heard_from(peer):
 	STATE["peers"][peer] = time.time()
