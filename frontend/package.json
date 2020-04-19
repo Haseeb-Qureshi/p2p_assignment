@@ -1,0 +1,20 @@
+{
+  "scripts": {
+    "webpack": "webpack --mode production",
+    "start": "http-server"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.9.5",
+    "babel-loader": "^8.1.0",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  },
+  "name": "frontend",
+  "version": "1.0.0",
+  "main": "webpack.config.js",
+  "dependencies": {},
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

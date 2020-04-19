@@ -22,8 +22,8 @@ const NUM_LOGS_TO_SHOW = 20;
 new ClipboardJS('.btn-clipboard');
 
 [0, 1, 2, 3].forEach(node => {
+  let port = 5000 + node;
   $(`#sleep${node}`).click(() => {
-    let port = 5000 + node;
 
     if (IS_ASLEEP[port]) {
       $.post(`http://localhost:${port}/wake_up`);
@@ -33,6 +33,10 @@ new ClipboardJS('.btn-clipboard');
       $(`#sleep${node}`).text("Wake up")
     }
     IS_ASLEEP[port] = !IS_ASLEEP[port];
+  });
+
+  $(`#reset${node}`).click(() => {
+    $.post(`http://localhost:${port}/reset`);
   });
 });
 
@@ -58,10 +62,26 @@ function setState(json, port) {
   // Set new state
   STATES[port] = json;
 
+  let expectedFields = new Set([
+    "peers",
+    "name",
+    "port",
+    "biggest_prime",
+    "biggest_prime_sender",
+    "msg_id",
+  ]);
+
   let html = [];
   html.push("<strong>Peers:</strong> " + formatPeers(json["peers"]));
   html.push("<strong>Biggest Mersenne prime:</strong> " + json["biggest_prime"]);
   html.push("<strong>Biggest Mersenne prime sender:</strong> " + nameify(json["biggest_prime_sender"]));
+
+  for (let field in json) {
+    if (!expectedFields.has(field)) {
+      html.push(`<strong>${field}</strong>: ${JSON.stringify(json[field])}`);
+    }
+  }
+
   html = html.map(el => "<li>" + el + "</li>" );
 
   let num = port % 5000;

@@ -490,6 +490,12 @@ ul.logs li:before {
 button.btn {
   display: flex;
   float: right;
+  margin: 2px;
+}
+
+button.reset {
+  background-color: #c50000;
+  border-color: #c50000;
 }
 
 button.btn-clipboard {

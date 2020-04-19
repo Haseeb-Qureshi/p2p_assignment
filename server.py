@@ -9,7 +9,6 @@ import sys
 import json
 import requests
 import random
-import ipdb # TODO:REMOVE
 
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
 
@@ -61,7 +60,7 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 
 	if msg_originator == MY_PORT: return
 
-	STATE["peers"][msg_forwarder] = time.time()
+	update_last_heard_from(msg_forwarder)
 
 	if msg_type == PING: # received a ping
 		pong_message = {
@@ -90,6 +89,9 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 
 		for peer in STATE["peers"].keys():
 			send_message_to(peer=peer, message=message, forwarded=True)
+
+def update_last_heard_from(peer):
+	STATE["peers"][peer] = time.time()
 
 def only_if_awake(f):
 	@functools.wraps(f)
@@ -242,6 +244,23 @@ def wake_up():
 	global AWAKE
 	AWAKE = True
 	return "OK"
+
+@app.route("/reset", methods=["POST"])
+def reset():
+	global AWAKE, LOGS, RECEIVED_MESSAGES, STATE
+	AWAKE = True
+	LOGS = []
+	RECEIVED_MESSAGES = set()
+	old_msg_id = STATE["msg_id"]
+	STATE = {
+		"name": MY_NAME,
+		"port": MY_PORT,
+		"peers": {},
+		"biggest_prime": 2,
+		"biggest_prime_sender": MY_PORT,
+		"msg_id": old_msg_id + 1,
+	}
+	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
 class Interval(Timer):
 	def run(self):

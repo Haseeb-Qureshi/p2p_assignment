@@ -14,11 +14,12 @@
     <main>
         <section>
             <header>
-                <h2>Nodes</h2>
+                <h2>P2P Network Dashboard</h2>
             </header>
             <aside id="node0">
               <h3 class="node-name" id="name-node0">Node name</h3>
               <button class="btn" id="sleep0">Sleep</button>
+              <button class="btn reset" id="reset0">Reset</button>
               <ul class="node-state" id="state-node0"></ul>
               <p>Node logs</p>
               <button class="btn-clipboard" data-clipboard-target="#logs-node0">
@@ -31,6 +32,7 @@
             <aside id="node1">
                 <h3 class="node-name" id="name-node1">Node name</h3>
                 <button class="btn" id="sleep1">Sleep</button>
+                <button class="btn reset" id="reset1">Reset</button>
                 <ul class="node-state" id="state-node1"></ul>
                 <p>Node logs</p>
                 <button class="btn-clipboard" data-clipboard-target="#logs-node1">
@@ -43,6 +45,7 @@
             <aside id="node2">
                 <h3 class="node-name" id="name-node2">Node name</h3>
                 <button class="btn" id="sleep2">Sleep</button>
+                <button class="btn reset" id="reset2">Reset</button>
                 <ul class="node-state" id="state-node2"></ul>
                 <p>Node logs</p>
                 <button class="btn-clipboard" data-clipboard-target="#logs-node2">
@@ -55,6 +58,7 @@
             <aside id="node3">
                 <h3 class="node-name" id="name-node3">Node name</h3>
                 <button class="btn" id="sleep3">Sleep</button>
+                <button class="btn reset" id="reset3">Reset</button>
                 <ul class="node-state" id="state-node3"></ul>
                 <p>Node logs</p>
                 <button class="btn-clipboard" data-clipboard-target="#logs-node3">
@@ -65,9 +69,14 @@
                 <div id="errors3"></div>
             </aside>
         </section>
+        <footer>
+          <pre>
+            (Poorly) Designed by Haseeb Qureshi for <a href="https://nakamoto.com/introduction-to-cryptocurrency/">Introduction to Cryptocurrencies</a>
+          </pre>
+        </footer>
     </main>
 </body>
 
 <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.4/clipboard.min.js"></script>
-<script src="updater.js"></script>
+<script src="./dist/main.js"></script>
