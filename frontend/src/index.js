@@ -50,6 +50,7 @@ function timeify(timestamp) {
 }
 
 function formatPeers(obj) {
+  if (Object.keys(obj).length === 0) return "<i>None... node is peerless.</i>"
   let s = "";
   for (let peer in obj) {
     s += `${nameify(peer)}: ${timeify(obj[peer])}</br>`

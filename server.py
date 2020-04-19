@@ -19,9 +19,6 @@ if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 names = open("names.txt", "r").read().split("\n")
 MY_NAME = random.choice(names)
 
-# Number of peers to gossip to per round
-INFECTION_FACTOR = 2
-
 # Message types
 PING = "PING"
 PONG = "PONG"
@@ -87,7 +84,7 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 			"msg_originator": msg_originator,
 		}
 
-		for peer in STATE["peers"].keys():
+		for peer in [*STATE["peers"]]:
 			send_message_to(peer=peer, message=message, forwarded=True)
 
 def update_last_heard_from(peer):
@@ -191,7 +188,7 @@ def send_pings_to_everyone():
 	"data": None,
 	}
 
-	for peer in STATE["peers"].keys():
+	for peer in [*STATE["peers"]]:
 		send_message_to(peer=peer, message=ping, forwarded=False)
 
 @only_if_awake
@@ -201,7 +198,7 @@ def evict_peers():
 	Runs every second.
 	'''
 	current_time = time.time()
-	peers_to_remove = [p for p in STATE["peers"].keys() if current_time - STATE["peers"][p] > 10]
+	peers_to_remove = [p for p in [*STATE["peers"]] if current_time - STATE["peers"][p] > 10]
 
 	for peer in peers_to_remove:
 		STATE["peers"].pop(peer)
@@ -215,16 +212,14 @@ def generate_and_gossip_next_mersenne_prime():
 	new_prime = find_next_mersenne_prime(STATE["biggest_prime"])
 	STATE["biggest_prime"] = new_prime
 	STATE["biggest_prime_sender"] = MY_PORT
-	gossip_prime_number(new_prime)
 
 	prime_message = {
-	"msg_type": PRIME,
-	"ttl": 2,
-	"data": prime,
+		"msg_type": PRIME,
+		"ttl": 2,
+		"data": new_prime,
 	}
 
-	k = min(INFECTION_FACTOR, len(STATE["peers"]))
-	for peer in random.sample(STATE["peers"].keys(), k):
+	for peer in [*STATE["peers"]]:
 		send_message_to(peer=peer, message=prime_message, forwarded=False)
 
 @app.route("/message_log")
@@ -277,7 +272,11 @@ def wake_up():
 
 class Interval(Timer):
 	def run(self):
-		while not self.finished.wait(self.interval): self.function()
+		while not self.finished.wait(self.interval):
+			try:
+				self.function()
+			except Exception as e:
+				log_error(e)
 
 if __name__ == "__main__":
 	print("My name is %s" % MY_NAME)
