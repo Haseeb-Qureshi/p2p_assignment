@@ -210,10 +210,7 @@ def evict_peers():
 def generate_next_mersenne_prime():
 	'''
 	Generates the next Mersenne prime and gossips it to our peers.
-	Runs once every 10 seconds, but then waits a random period <5s to stagger node timing.
 	'''
-	time.sleep(random.uniform(0, 5))
-
 	new_prime = find_next_mersenne_prime(STATE["biggest_prime"])
 	STATE["biggest_prime"] = new_prime
 	STATE["biggest_prime_sender"] = MY_PORT
@@ -273,14 +270,16 @@ if __name__ == "__main__":
 
 	# Send ping every 5 seconds
 	ping_timer = Interval(5.0, send_pings_to_everyone)
-	ping_timer.start()
 
 	# Evict a peer if they haven't responded to a ping or sent a ping themselves
 	eviction_timer = Interval(1.0, evict_peers)
-	eviction_timer.start()
 
 	# Send a new Mersenne prime every 10 seconds
 	prime_timer = Interval(10.0, generate_next_mersenne_prime)
-	prime_timer.start()
 
+	# Sleep a random period before starting, to add a bit of jitter between nodes
+	time.sleep(random.uniform(0, 2))
+	eviction_timer.start()
+	ping_timer.start()
+	prime_timer.start()
 	app.run(host="0.0.0.0", port=MY_PORT)

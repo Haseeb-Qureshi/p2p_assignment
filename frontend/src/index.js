@@ -37,6 +37,7 @@ new ClipboardJS('.btn-clipboard');
 
   $(`#reset${node}`).click(() => {
     $.post(`http://localhost:${port}/reset`);
+    $(`#logs-node${node}`).html("");
   });
 });
 

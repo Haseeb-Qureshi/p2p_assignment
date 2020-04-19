@@ -4,6 +4,7 @@
     "start": "http-server"
   },
   "devDependencies": {
+    "@babel/plugin-transform-arrow-functions": "^7.8.3",
     "@babel/preset-env": "^7.9.5",
     "babel-loader": "^8.1.0",
     "webpack": "^4.42.1",
@@ -16,5 +17,8 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "browserslist": [
+    "cover 99.75%"
+  ]
 }

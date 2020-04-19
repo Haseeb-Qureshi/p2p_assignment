@@ -6,7 +6,7 @@ module: {
       use: {
         loader: 'babel-loader',
         options: {
-          presets: ['@babel/preset-env']
+          presets: ['es2015']
         }
       }
     }
