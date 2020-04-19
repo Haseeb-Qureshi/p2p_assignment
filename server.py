@@ -94,6 +94,10 @@ def update_last_heard_from(peer):
 	STATE["peers"][peer] = time.time()
 
 def only_if_awake(f):
+	'''
+	Decorator that ensures a function only runs when the node is awake.
+	If not, the node drops the request.
+	'''
 	@functools.wraps(f)
 	def if_awake(*args, **kwargs):
 		if AWAKE:
@@ -105,6 +109,11 @@ def only_if_awake(f):
 @only_if_awake
 @app.route("/receive", methods=["POST"])
 def receive():
+	'''
+	Entry-point when the node receives a message from another node.
+	Parses the request and forwards it along to `respond`.
+	You should not need to modify this function.
+	'''
 	req_data = request.get_json()
 	log_message(message=req_data, received=True)
 
@@ -126,8 +135,7 @@ def receive():
 def send_message_to(peer, message, forwarded):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
-	automatically added. Only one message is sent out at a time to avoid
-	race conditions.
+	automatically added. You should not need to modify this function.
 	'''
 	if type(peer) is not int:
 		raise TypeError("Tried to send a message to non-integer: %d" % peer)
@@ -160,29 +168,6 @@ def send_message_to(peer, message, forwarded):
 
 	STATE["msg_id"] += 1
 
-@only_if_awake
-def send_pings_to_everyone():
-	ping = {
-		"msg_type": PING,
-		"ttl":  0,
-		"data": None,
-	}
-
-	for peer in STATE["peers"].keys():
-		send_message_to(peer=peer, message=ping, forwarded=False)
-
-@only_if_awake
-def gossip_prime_number(prime):
-	prime_message = {
-		"msg_type": PRIME,
-		"ttl": 2,
-		"data": prime,
-	}
-
-	k = min(INFECTION_FACTOR, len(STATE["peers"]))
-	for peer in random.sample(STATE["peers"].keys(), k):
-		send_message_to(peer=peer, message=prime_message, forwarded=False)
-
 def log_message(message, received):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
@@ -196,9 +181,24 @@ def log_error(e):
 	}, received=True)
 
 @only_if_awake
+def send_pings_to_everyone():
+	'''
+	Routine that runs every 5 seconds; sends pings to every peer.
+	'''
+	ping = {
+	"msg_type": PING,
+	"ttl":  0,
+	"data": None,
+	}
+
+	for peer in STATE["peers"].keys():
+		send_message_to(peer=peer, message=ping, forwarded=False)
+
+@only_if_awake
 def evict_peers():
 	'''
-	Evicts any peers who we haven't heard from in the last 10 seconds.
+	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
+	Runs every second.
 	'''
 	current_time = time.time()
 	peers_to_remove = [p for p in STATE["peers"].keys() if current_time - STATE["peers"][p] > 10]
@@ -207,14 +207,25 @@ def evict_peers():
 		STATE["peers"].pop(peer)
 
 @only_if_awake
-def generate_next_mersenne_prime():
+def generate_and_gossip_next_mersenne_prime():
 	'''
-	Generates the next Mersenne prime and gossips it to our peers.
+	Routine that generates the next Mersenne prime and gossips it to our peers.
+	Runs every 10 seconds.
 	'''
 	new_prime = find_next_mersenne_prime(STATE["biggest_prime"])
 	STATE["biggest_prime"] = new_prime
 	STATE["biggest_prime_sender"] = MY_PORT
 	gossip_prime_number(new_prime)
+
+	prime_message = {
+	"msg_type": PRIME,
+	"ttl": 2,
+	"data": prime,
+	}
+
+	k = min(INFECTION_FACTOR, len(STATE["peers"]))
+	for peer in random.sample(STATE["peers"].keys(), k):
+		send_message_to(peer=peer, message=prime_message, forwarded=False)
 
 @app.route("/message_log")
 def message_log():
@@ -230,20 +241,12 @@ def state():
 	'''
 	return STATE
 
-@app.route("/sleep", methods=["POST"])
-def sleep():
-	global AWAKE
-	AWAKE = False
-	return "OK"
-
-@app.route("/wake_up", methods=["POST"])
-def wake_up():
-	global AWAKE
-	AWAKE = True
-	return "OK"
-
 @app.route("/reset", methods=["POST"])
 def reset():
+	'''
+	Hard reset on all state for this node. Still gets initialized to having
+	the same bootstrap peer it started with.
+	'''
 	global AWAKE, LOGS, RECEIVED_MESSAGES, STATE
 	AWAKE = True
 	LOGS = []
@@ -259,13 +262,26 @@ def reset():
 	}
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
+
+@app.route("/sleep", methods=["POST"])
+def sleep():
+	global AWAKE
+	AWAKE = False
+	return "OK"
+
+@app.route("/wake_up", methods=["POST"])
+def wake_up():
+	global AWAKE
+	AWAKE = True
+	return "OK"
+
 class Interval(Timer):
 	def run(self):
 		while not self.finished.wait(self.interval): self.function()
 
 if __name__ == "__main__":
 	print("My name is %s" % MY_NAME)
-	# If passed in another peer's port, initialize that peer with no message history
+	# If passed in another peer's port, initialize that peer
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
 	# Send ping every 5 seconds
@@ -275,7 +291,7 @@ if __name__ == "__main__":
 	eviction_timer = Interval(1.0, evict_peers)
 
 	# Send a new Mersenne prime every 10 seconds
-	prime_timer = Interval(10.0, generate_next_mersenne_prime)
+	prime_timer = Interval(10.0, generate_and_gossip_next_mersenne_prime)
 
 	# Sleep a random period before starting, to add a bit of jitter between nodes
 	time.sleep(random.uniform(0, 2))
