@@ -36,7 +36,7 @@ CORS(app)
 # List of all messages we've seen before (so as not to re-transmit duplicates)
 RECEIVED_MESSAGES = set()
 
-# List of logs
+# Message log
 LOGS = []
 
 # Global state object for reading and altering state: you should read and write to this
@@ -164,9 +164,9 @@ def send_pings_to_everyone():
 	Routine that runs every 5 seconds; sends pings to every peer.
 	'''
 	ping = {
-	"msg_type": PING,
-	"ttl":  0,
-	"data": None,
+		"msg_type": PING,
+		"ttl":  0,
+		"data": None,
 	}
 
 	for peer in [*STATE["peers"]]:
