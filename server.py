@@ -110,7 +110,7 @@ def receive():
 	return "OK"
 
 @only_if_awake
-def send_message_to(peer, message, forwarded):
+def send_message_to(peer: int, message: dict, forwarded: bool):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
 	automatically added. You should not need to modify this function.
@@ -206,7 +206,7 @@ def generate_and_gossip_next_mersenne_prime():
 @app.route("/message_log")
 def message_log():
 	'''
-	Reads out the last 5 messages received by this node.
+	Reads out the last 5 messages logged by this node.
 	'''
 	return json.dumps(LOGS[-5:])
 
