@@ -1,11 +1,10 @@
 #!/bin/bash
 
-# Install Python dependencies
-pip3 freeze > requirements.txt
-pip3 install -r requirements.txt
+poetry update
+poetry install
 
 # Recompile frontend code
-npm --prefix ./frontend/ run webpack
+npm run webpack
 
 # Open website
 open frontend/index.html

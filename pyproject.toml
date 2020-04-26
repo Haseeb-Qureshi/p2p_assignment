@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "p2p"
+version = "0.1.0"
+description = "A toy P2P application, inspired by GIMPS"
+authors = ["Haseeb Qureshi <haseeb@haseebq.com>"]
+license = "MIT"
+include = ["server.py"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+flask = "^1.1.1"
+sympy = "^1.5.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
