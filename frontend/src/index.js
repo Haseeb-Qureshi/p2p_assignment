@@ -18,7 +18,7 @@ const IS_ASLEEP = {
   5003: false,
 };
 const NUM_LOGS_TO_SHOW = 20;
-const ROOT_URL =       window.location.href.toString();
+const ROOT_URL = window.location.href.toString();
 
 new ClipboardJS('.btn-clipboard');
 
@@ -92,39 +92,6 @@ function setState(json, port) {
   $("h3#name-node" + num).text(nameify(port));
 }
 
-setInterval(() => {
-  PORTS.forEach((port) => {
-    $.getJSON(`${ROOT_URL}${port}/state`)
-      .done((json) => setState(json, port))
-      .fail((jqxhr, textStatus, err) => {
-        $("ul#state-node" + (port - 5000)).text("Node is not responding!")
-      });
-  });
-}, 1000);
-
-
-setInterval(() => {
-  PORTS.forEach((port) => {
-    $.getJSON(`${ROOT_URL}${port}/message_log`)
-      .done((json) => {
-        // dedup logs
-        let shouldUpdate = false;
-        json.forEach(log => {
-          let s = JSON.stringify(log);
-          if (!LOGS[port].includes(s)) {
-            LOGS[port].push(s);
-            shouldUpdate = true;
-          }
-        });
-
-        if (shouldUpdate) updateLogs(port);
-      })
-      .fail((jqxhr, textStatus, err) => {
-        console.log([jqxhr, textStatus, err]);
-      });
-  });
-}, 200);
-
 function updateLogs(port) {
   let logs = [];
   let errors = [];
@@ -156,3 +123,39 @@ function updateLogs(port) {
   });
   $("ul#logs-node" + port % 5000).html(logs.reverse().join(""));
 }
+
+setTimeout(() => {
+  setInterval(() => {
+    PORTS.forEach((port) => {
+      $.getJSON(`${ROOT_URL}${port}/state`)
+        .done((json) => setState(json, port))
+        .fail((jqxhr, textStatus, err) => {
+          $("ul#state-node" + (port - 5000)).text("Node is not responding!")
+        });
+    });
+  }, 1000);
+
+
+  setInterval(() => {
+    PORTS.forEach((port) => {
+      $.getJSON(`${ROOT_URL}${port}/message_log`)
+        .done((json) => {
+          // dedup logs
+          let shouldUpdate = false;
+          json.forEach(log => {
+            let s = JSON.stringify(log);
+            if (!LOGS[port].includes(s)) {
+              LOGS[port].push(s);
+              shouldUpdate = true;
+            }
+          });
+
+          if (shouldUpdate) updateLogs(port);
+        })
+        .fail((jqxhr, textStatus, err) => {
+          console.log([jqxhr, textStatus, err]);
+        });
+    });
+  }, 200);
+
+}, 4000); // Give the backend some time to get set up

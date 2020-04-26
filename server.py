@@ -30,7 +30,7 @@ MESSAGE_TYPES = set([PING, PONG, PRIME])
 # Only do things if the node is awake
 AWAKE = True
 
-app = Flask(__name__, static_url_path="", static_folder="frontend")
+app = Flask(__name__)
 
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
@@ -212,13 +212,6 @@ def message_log():
 	'''
 	return json.dumps(LOGS[-5:])
 
-@app.route("/state")
-def state():
-	'''
-	Reads out the current state of this node.
-	'''
-	return STATE
-
 @app.route("/reset", methods=["POST"])
 def reset():
 	'''
@@ -252,9 +245,12 @@ def wake_up():
 	AWAKE = True
 	return "OK"
 
-@app.route("/")
-def root():
-	return app.send_static_file("index.html")
+@app.route("/state")
+def state():
+	'''
+	Reads out the current state of this node.
+	'''
+	return STATE
 
 class Interval(Timer):
 	def run(self):
