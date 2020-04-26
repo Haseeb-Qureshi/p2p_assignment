@@ -254,6 +254,9 @@ def state():
 
 class Interval(Timer):
 	def run(self):
+		# Sleep a random period before starting, to add a bit of jitter between nodes
+		time.sleep(random.uniform(0, 2))
+
 		while not self.finished.wait(self.interval):
 			try:
 				self.function()
@@ -274,8 +277,6 @@ if __name__ == "__main__":
 	# Send a new Mersenne prime every 10 seconds
 	prime_timer = Interval(10.0, generate_and_gossip_next_mersenne_prime)
 
-	# Sleep a random period before starting, to add a bit of jitter between nodes
-	time.sleep(random.uniform(0, 2))
 	eviction_timer.start()
 	ping_timer.start()
 	prime_timer.start()

@@ -11,6 +11,8 @@ MY_PORT = int(sys.argv[1])
 app = Flask(__name__, static_url_path="", static_folder="frontend")
 CORS(app)
 
+EXCLUDED_HEADERS = ["content-encoding", "content-length", "transfer-encoding", "connection"]
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
@@ -18,17 +20,16 @@ def index():
 @app.route("/<int:node>/<method>",methods=["GET", "POST", "DELETE"])
 def proxy(node, method):
     if request.method == "GET":
-        resp = requests.get(f"http://localhost:{node}/{method}")
-        excluded_headers = ["content-encoding", "content-length", "transfer-encoding", "connection"]
-        headers = [(name, value) for (name, value) in  resp.raw.headers.items() if name.lower() not in excluded_headers]
-        response = Response(resp.content, resp.status_code, headers)
-        return response
+        r = requests.get(f"http://localhost:{node}/{method}")
+        return Response(r.content, r.status_code, stripped_headers(r))
     elif request.method == "POST":
-        resp = requests.post(f"http://localhost:{node}{method}", json=request.get_json())
-        excluded_headers = ["content-encoding", "content-length", "transfer-encoding", "connection"]
-        headers = [(name, value) for (name, value) in resp.raw.headers.items() if name.lower() not in excluded_headers]
-        response = Response(resp.content, resp.status_code, headers)
-        return response
+        r = requests.post(f"http://localhost:{node}{method}", json=request.get_json())
+        return Response(r.content, r.status_code, stripped_headers(r))
+    else:
+        raise Exception("Invalid request: " + request.method)
+
+def stripped_headers(r):
+    return [(name, value) for (name, value) in r.raw.headers.items() if name.lower() not in EXCLUDED_HEADERS]
 
 if __name__ == "__main__":
     logging.getLogger('waitress').setLevel(logging.ERROR)
