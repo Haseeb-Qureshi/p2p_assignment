@@ -1,44 +1,44 @@
-const PORTS = [5000, 5001, 5002, 5003];
+const PORTS = [5001, 5002, 5003, 5004];
 const LOGS = {
-  5000: [],
   5001: [],
   5002: [],
   5003: [],
+  5004: [],
 };
 const STATES = {
-  5000: {},
   5001: {},
   5002: {},
   5003: {},
+  5004: {},
 };
 const IS_ASLEEP = {
-  5000: false,
   5001: false,
   5002: false,
   5003: false,
+  5004: false,
 };
 const NUM_LOGS_TO_SHOW = 20;
 const ROOT_URL = window.location.href.toString();
 
 new ClipboardJS('.btn-clipboard');
 
-[0, 1, 2, 3].forEach(node => {
-  let port = 5000 + node;
-  $(`#sleep${node}`).click(() => {
+PORTS.forEach(port => {
+  let numNode = port % 5000;
+  $(`#sleep${numNode}`).click(() => {
 
     if (IS_ASLEEP[port]) {
       $.post(`${ROOT_URL}${port}/wake_up`);
-      $(`#sleep${node}`).text("Sleep")
+      $(`#sleep${numNode}`).text("Sleep")
     } else {
       $.post(`${ROOT_URL}${port}/sleep`);
-      $(`#sleep${node}`).text("Wake up")
+      $(`#sleep${numNode}`).text("Wake up")
     }
     IS_ASLEEP[port] = !IS_ASLEEP[port];
   });
 
-  $(`#reset${node}`).click(() => {
+  $(`#reset${numNode}`).click(() => {
     $.post(`${ROOT_URL}${port}/reset`);
-    $(`#logs-node${node}`).html("");
+    $(`#logs-num${numNode}`).html("");
   });
 });
 
