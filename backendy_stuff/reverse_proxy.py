@@ -19,14 +19,17 @@ def index():
 
 @app.route("/<int:node>/<method>",methods=["GET", "POST", "DELETE"])
 def proxy(node, method):
-    if request.method == "GET":
-        r = requests.get(f"http://localhost:{node}/{method}")
-        return Response(r.content, r.status_code, stripped_headers(r))
-    elif request.method == "POST":
-        r = requests.post(f"http://localhost:{node}/{method}", json=request.get_json())
-        return Response(r.content, r.status_code, stripped_headers(r))
-    else:
-        raise Exception("Invalid request: " + request.method)
+    try:
+        if request.method == "GET":
+            r = requests.get(f"http://localhost:{node}/{method}")
+            return Response(r.content, r.status_code, stripped_headers(r))
+        elif request.method == "POST":
+            r = requests.post(f"http://localhost:{node}/{method}", json=request.get_json())
+            return Response(r.content, r.status_code, stripped_headers(r))
+        else:
+            raise Exception("Invalid request: " + request.method)
+    except ConnectionRefusedError:
+        pass
 
 def stripped_headers(r):
     return [(name, value) for (name, value) in r.raw.headers.items() if name.lower() not in EXCLUDED_HEADERS]

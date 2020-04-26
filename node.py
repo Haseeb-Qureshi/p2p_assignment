@@ -35,11 +35,17 @@ app = Flask(__name__)
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
-# List of all messages we've seen before (so as not to re-transmit duplicates)
-RECEIVED_MESSAGES = set()
-
 # Message log
 LOGS = []
+
+##############################################################################
+##############################################################################
+################### BELOW IS WHERE YOU WILL WRITE YOUR CODE ##################
+##############################################################################
+##############################################################################
+
+# List of all messages we've seen before (so as not to re-transmit duplicates)
+RECEIVED_MESSAGES = set()
 
 # Global state object for reading and altering state: you should read and write to this
 STATE = {
@@ -57,12 +63,18 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 	Upon receiving a message from a peer, what does each node do?
 
 	Args:
-        msg_type (str): "PING", "PONG", or "PRIME"
-        msg_id (int): The auto-incrementing message counter for each node
-		msg_forwarder (int): The port of the immediate node that sent you this message
-		msg_originator (int): The port of the node that created the original message (for a 0 TTL point-to-point message, this will be the same as the forwarder)
-		ttl (int): Time-to-live—the number of hops remaining in the lifetime of this message until it should be dropped. A 0 TTL message should not be forwarded any further.
-		data (int or None): The data in the message payload. For PINGs and PONGs, this will be None. For a PRIME message, the data field will contain the prime number.
+	    msg_type (str):
+			"PING", "PONG", or "PRIME" (you can use the constants PING/PONG/PRIME)
+	    msg_id (int):
+			The auto-incrementing message counter for each node
+		msg_forwarder (int):
+			The port of the immediate node that sent you this message
+		msg_originator (int):
+			The port of the node that created the original message (for a 0 TTL point-to-point message like a PING, this will be the same as the forwarder)
+		ttl (int):
+			Time-to-live; the number of hops remaining in the lifetime of this message until it should be dropped. A 0 TTL message should not be forwarded.
+		data (int or None):
+			The data in the message payload. For PINGs and PONGs, this will be None. For a PRIME message, the data field will contain the prime number.
 
     Returns:
         Nothing
@@ -72,6 +84,12 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 
 def update_last_heard_from(peer):
 	STATE["peers"][peer] = time.time()
+
+##############################################################################
+##############################################################################
+############################# YOUR CODE ENDS HERE ############################
+##############################################################################
+##############################################################################
 
 def only_if_awake(f):
 	'''
