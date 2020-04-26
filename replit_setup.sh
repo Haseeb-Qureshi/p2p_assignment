@@ -1,9 +1,9 @@
-# Recompile frontend code
-npm install
-npm run webpack
+echo "This script will take several seconds to boot."
+echo "To kill all of the nodes, hit ctrl+C."
+echo "If you want to restart them again, type into the console:"
+echo "bash replit_setup.sh"
 
-# Install Python dependencies
-poetry install
+pkill -f "python3"
 
 # Run 4 nodes and kill all of them if one process is killed
 killbg() {
