@@ -2,7 +2,7 @@ from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
 from waitress import serve
-from primes import find_next_mersenne_prime
+from backendy_stuff.primes import find_next_mersenne_prime
 import os
 import time
 import functools

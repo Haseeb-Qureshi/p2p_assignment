@@ -21,4 +21,4 @@ python3 node.py 5003 5002 &
 pids+=($!)
 python3 node.py 5004 5003 &
 pids+=($!)
-python3 reverse_proxy.py 5000
+python3 backendy_stuff/reverse_proxy.py 5000
