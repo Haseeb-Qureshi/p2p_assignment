@@ -3,7 +3,7 @@ npm install
 npm run webpack
 
 # Install Python dependencies
-pip3 install -r requirements.txt
+poetry install
 
 # Run 4 servers and kill all of them if one process is killed
 killbg() {
