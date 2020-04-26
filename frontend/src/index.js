@@ -22,23 +22,23 @@ const ROOT_URL = window.location.href.toString();
 
 new ClipboardJS('.btn-clipboard');
 
-PORTS.forEach(port => {
-  let numNode = port % 5000;
-  $(`#sleep${numNode}`).click(() => {
+const numNode = (node) => node % 5000;
 
+PORTS.forEach(port => {
+  $(`#sleep${numNode(port)}`).click(() => {
     if (IS_ASLEEP[port]) {
       $.post(`${ROOT_URL}${port}/wake_up`);
-      $(`#sleep${numNode}`).text("Sleep")
+      $(`#sleep${numNode(port)}`).text("Sleep")
     } else {
       $.post(`${ROOT_URL}${port}/sleep`);
-      $(`#sleep${numNode}`).text("Wake up")
+      $(`#sleep${numNode(port)}`).text("Wake up")
     }
     IS_ASLEEP[port] = !IS_ASLEEP[port];
   });
 
-  $(`#reset${numNode}`).click(() => {
+  $(`#reset${numNode(port)}`).click(() => {
     $.post(`${ROOT_URL}${port}/reset`);
-    $(`#logs-num${numNode}`).html("");
+    $(`#logs-node${numNode(port)}`).html("");
   });
 });
 
@@ -87,9 +87,8 @@ function setState(json, port) {
 
   html = html.map(el => "<li>" + el + "</li>" );
 
-  let num = port % 5000;
-  $("ul#state-node" + num).html(html.join(""));
-  $("h3#name-node" + num).text(nameify(port));
+  $("ul#state-node" + numNode(port)).html(html.join(""));
+  $("h3#name-node" + numNode(port)).text(nameify(port));
 }
 
 function updateLogs(port) {
@@ -111,7 +110,7 @@ function updateLogs(port) {
         pairs.join(","),
         "</li>"
       ].join(""));
-      $("div#errors" + port % 5000).html(`<div class="alert alert-danger alert-dismissable">${errors.reverse().join("")}</div>`);
+      $("div#errors" + numNode(port)).html(`<div class="alert alert-danger alert-dismissable">${errors.reverse().join("")}</div>`);
     } else {
       logs.push([
         "<li class=\"line\">",
@@ -121,7 +120,7 @@ function updateLogs(port) {
       ].join(""));
     }
   });
-  $("ul#logs-node" + port % 5000).html(logs.reverse().join(""));
+  $("ul#logs-node" + numNode(port)).html(logs.reverse().join(""));
 }
 
 setTimeout(() => {
@@ -130,7 +129,7 @@ setTimeout(() => {
       $.getJSON(`${ROOT_URL}${port}/state`)
         .done((json) => setState(json, port))
         .fail((jqxhr, textStatus, err) => {
-          $("ul#state-node" + (port - 5000)).text("Node is not responding!")
+          $("ul#state-node" + numNode(port)).text("Node is not responding!")
         });
     });
   }, 1000);

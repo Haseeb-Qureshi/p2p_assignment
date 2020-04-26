@@ -232,6 +232,7 @@ def reset():
 		"msg_id": old_msg_id + 1,
 	}
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
+	return "OK"
 
 @app.route("/sleep", methods=["POST"])
 def sleep():

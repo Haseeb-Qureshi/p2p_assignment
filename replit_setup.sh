@@ -1,7 +1,7 @@
 echo "This script will take several seconds to boot."
 echo "To kill all of the nodes, hit ctrl+C."
-echo "If you want to restart them again, type into the console:"
-echo "bash replit_setup.sh"
+echo "If you want to restart the script again, type into the console: bash replit_setup.sh"
+echo "---------------------------------------------------------------------"
 
 pkill -f "python3"
 

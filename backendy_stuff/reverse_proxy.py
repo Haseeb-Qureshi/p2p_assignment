@@ -8,7 +8,7 @@ import sys
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
 MY_PORT = int(sys.argv[1])
 
-app = Flask(__name__, static_url_path="", static_folder="frontend")
+app = Flask(__name__, static_url_path="", static_folder="../frontend")
 CORS(app)
 
 EXCLUDED_HEADERS = ["content-encoding", "content-length", "transfer-encoding", "connection"]
@@ -23,7 +23,7 @@ def proxy(node, method):
         r = requests.get(f"http://localhost:{node}/{method}")
         return Response(r.content, r.status_code, stripped_headers(r))
     elif request.method == "POST":
-        r = requests.post(f"http://localhost:{node}{method}", json=request.get_json())
+        r = requests.post(f"http://localhost:{node}/{method}", json=request.get_json())
         return Response(r.content, r.status_code, stripped_headers(r))
     else:
         raise Exception("Invalid request: " + request.method)
