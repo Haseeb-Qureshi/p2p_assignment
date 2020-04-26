@@ -1,2 +1,16 @@
 language = "python3"
-run = "bash main.sh"
+run = "npm run webpack
+killbg() {
+        for p in "${pids[@]}" ; do
+                kill "$p";
+        done
+}
+trap killbg EXIT
+pids=()
+python3 server.py 5000 &
+pids+=($!)
+python3 server.py 5001 5000 &
+pids+=($!)
+python3 server.py 5002 5001 &
+pids+=($!)
+python3 server.py 5003 5002"

@@ -1,7 +1,8 @@
-from flask import Flask, request
+from flask import Flask, request, render_template
 from flask_cors import CORS
 from threading import Timer
 from primes import find_next_mersenne_prime
+import os
 import time
 import functools
 import traceback
@@ -28,7 +29,8 @@ MESSAGE_TYPES = set([PING, PONG, PRIME])
 # Only do things if the node is awake
 AWAKE = True
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="", static_folder="static")
+
 
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
@@ -210,7 +212,7 @@ def message_log():
 	'''
 	return json.dumps(LOGS[-5:])
 
-@app.route("/")
+@app.route("/state")
 def state():
 	'''
 	Reads out the current state of this node.
@@ -238,7 +240,6 @@ def reset():
 	}
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
-
 @app.route("/sleep", methods=["POST"])
 def sleep():
 	global AWAKE
@@ -250,6 +251,10 @@ def wake_up():
 	global AWAKE
 	AWAKE = True
 	return "OK"
+
+@app.route("/")
+def root():
+	return render_template("index.html")
 
 class Interval(Timer):
 	def run(self):

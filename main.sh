@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Install Python dependencies
 poetry update
 poetry install
 
@@ -7,7 +8,7 @@ poetry install
 npm run webpack
 
 # Open website
-open frontend/index.html
+open static/index.html
 
 # Run 4 servers and kill all of them if one process is killed
 killbg() {

@@ -93,7 +93,7 @@ function setState(json, port) {
 
 setInterval(() => {
   PORTS.forEach((port) => {
-    $.getJSON("http://localhost:" + port)
+    $.getJSON(`http://localhost:${port}/state`)
       .done((json) => setState(json, port))
       .fail((jqxhr, textStatus, err) => {
         $("ul#state-node" + (port - 5000)).text("Node is not responding!")
