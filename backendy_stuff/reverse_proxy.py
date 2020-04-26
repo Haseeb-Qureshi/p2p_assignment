@@ -28,7 +28,7 @@ def proxy(node, method):
             return Response(r.content, r.status_code, stripped_headers(r))
         else:
             raise Exception("Invalid request: " + request.method)
-    except ConnectionRefusedError:
+    except requests.exceptions.ConnectionError:
         pass
 
 def stripped_headers(r):
