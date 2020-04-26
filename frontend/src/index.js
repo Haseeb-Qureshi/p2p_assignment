@@ -18,6 +18,7 @@ const IS_ASLEEP = {
   5003: false,
 };
 const NUM_LOGS_TO_SHOW = 20;
+const ROOT_URL =       window.location.href.toString();
 
 new ClipboardJS('.btn-clipboard');
 
@@ -26,17 +27,17 @@ new ClipboardJS('.btn-clipboard');
   $(`#sleep${node}`).click(() => {
 
     if (IS_ASLEEP[port]) {
-      $.post(`http://localhost:${port}/wake_up`);
+      $.post(`${ROOT_URL}${port}/wake_up`);
       $(`#sleep${node}`).text("Sleep")
     } else {
-      $.post(`http://localhost:${port}/sleep`);
+      $.post(`${ROOT_URL}${port}/sleep`);
       $(`#sleep${node}`).text("Wake up")
     }
     IS_ASLEEP[port] = !IS_ASLEEP[port];
   });
 
   $(`#reset${node}`).click(() => {
-    $.post(`http://localhost:${port}/reset`);
+    $.post(`${ROOT_URL}${port}/reset`);
     $(`#logs-node${node}`).html("");
   });
 });
@@ -93,7 +94,7 @@ function setState(json, port) {
 
 setInterval(() => {
   PORTS.forEach((port) => {
-    $.getJSON(`http://localhost:${port}/state`)
+    $.getJSON(`${ROOT_URL}${port}/state`)
       .done((json) => setState(json, port))
       .fail((jqxhr, textStatus, err) => {
         $("ul#state-node" + (port - 5000)).text("Node is not responding!")
@@ -104,7 +105,7 @@ setInterval(() => {
 
 setInterval(() => {
   PORTS.forEach((port) => {
-    $.getJSON("http://localhost:" + port + "/message_log")
+    $.getJSON(`${ROOT_URL}${port}/message_log`)
       .done((json) => {
         // dedup logs
         let shouldUpdate = false;

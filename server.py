@@ -1,6 +1,7 @@
-from flask import Flask, request, render_template
+from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
+from waitress import serve
 from primes import find_next_mersenne_prime
 import os
 import time
@@ -29,8 +30,7 @@ MESSAGE_TYPES = set([PING, PONG, PRIME])
 # Only do things if the node is awake
 AWAKE = True
 
-app = Flask(__name__, static_url_path="", static_folder="static")
-
+app = Flask(__name__, static_url_path="", static_folder="frontend")
 
 # Enable cross-origin requests so localhost dashboard works
 CORS(app)
@@ -254,7 +254,7 @@ def wake_up():
 
 @app.route("/")
 def root():
-	return render_template("index.html")
+	return app.send_static_file("index.html")
 
 class Interval(Timer):
 	def run(self):
@@ -283,4 +283,4 @@ if __name__ == "__main__":
 	eviction_timer.start()
 	ping_timer.start()
 	prime_timer.start()
-	app.run(host="0.0.0.0", port=MY_PORT)
+	serve(app, host="0.0.0.0", port=MY_PORT)
