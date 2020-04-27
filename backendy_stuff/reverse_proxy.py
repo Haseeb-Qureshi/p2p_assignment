@@ -29,7 +29,7 @@ def proxy(node, method):
         else:
             raise Exception("Invalid request: " + request.method)
     except requests.exceptions.ConnectionError:
-        pass
+        return "ConnectionError", 500 
 
 def stripped_headers(r):
     return [(name, value) for (name, value) in r.raw.headers.items() if name.lower() not in EXCLUDED_HEADERS]
