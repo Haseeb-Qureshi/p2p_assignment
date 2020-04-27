@@ -72,12 +72,14 @@ function setState(json, port) {
     "biggest_prime",
     "biggest_prime_sender",
     "msg_id",
+    "awake",
   ]);
 
   let html = [];
   html.push("<strong>Peers:</strong> " + formatPeers(json["peers"]));
   html.push("<strong>Biggest Mersenne prime:</strong> " + json["biggest_prime"]);
   html.push("<strong>Biggest Mersenne prime sender:</strong> " + nameify(json["biggest_prime_sender"]));
+  html.push("<strong>Awake:</strong> " + json["awake"]);
 
   for (let field in json) {
     if (!expectedFields.has(field)) {

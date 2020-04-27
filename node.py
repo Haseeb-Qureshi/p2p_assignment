@@ -2,18 +2,23 @@ from flask import Flask, request
 from flask_cors import CORS
 from threading import Timer
 from waitress import serve
-from backendy_stuff.primes import find_next_mersenne_prime
+from typing import Union
 import os
 import time
-import functools
 import traceback
 import sys
 import json
 import requests
 import random
+from backendy_stuff.primes import find_next_mersenne_prime
+from backendy_stuff.utils import only_if_awake
+
+app = Flask(__name__)
+
+# Enable cross-origin requests so localhost dashboard works
+CORS(app)
 
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
-
 MY_PORT = int(sys.argv[1])
 if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 
@@ -21,33 +26,25 @@ if MY_PORT < 1024: raise Exception("Port number must be >= 1024")
 names = open("names.txt", "r").read().split("\n")
 MY_NAME = random.choice(names)
 
+# Message log
+LOGS = []
+
+#################################################################
+#################################################################
+############# BELOW IS THE CODE THAT MATTERS TO YOU #############
+#################################################################
+#################################################################
+
 # Message types
 PING = "PING"
 PONG = "PONG"
 PRIME = "PRIME"
 MESSAGE_TYPES = set([PING, PONG, PRIME])
 
-# Only do things if the node is awake
-AWAKE = True
-
-app = Flask(__name__)
-
-# Enable cross-origin requests so localhost dashboard works
-CORS(app)
-
-# Message log
-LOGS = []
-
-##############################################################################
-##############################################################################
-################### BELOW IS WHERE YOU WILL WRITE YOUR CODE ##################
-##############################################################################
-##############################################################################
-
 # List of all messages we've seen before (so as not to re-transmit duplicates)
 RECEIVED_MESSAGES = set()
 
-# Global state object for reading and altering state: you should read and write to this
+# Global state object for reading and altering state. You should read and write to this.
 STATE = {
 	"name": MY_NAME,
 	"port": MY_PORT,
@@ -55,9 +52,16 @@ STATE = {
 	"biggest_prime": 2, # Biggest Mersenne prime we've seen so far (starts at 2)
 	"biggest_prime_sender": MY_PORT, # Sender of the current biggest prime (starts as self)
 	"msg_id": 0, # Monotonically increasing message counter (we'll automatically increment this for you)
+	"awake": True, # Only do things if this node is awake
 }
 
-def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
+def respond(
+	msg_type: str,
+	msg_id: int,
+	msg_forwarder: int,
+	msg_originator: int,
+	ttl: int,
+	data: Union[type(None), int]):
 	'''
 	This is where the meat of the P2P protocol happens.
 	Upon receiving a message from a peer, what does each node do?
@@ -73,7 +77,7 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 			The port of the node that created the original message (for a 0 TTL point-to-point message like a PING, this will be the same as the forwarder)
 		ttl (int):
 			Time-to-live; the number of hops remaining in the lifetime of this message until it should be dropped. A 0 TTL message should not be forwarded.
-		data (int or None):
+		data (None or int):
 			The data in the message payload. For PINGs and PONGs, this will be None. For a PRIME message, the data field will contain the prime number.
 
     Returns:
@@ -82,58 +86,19 @@ def respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data):
 	# TODO: Your code here!
 	pass
 
-def update_last_heard_from(peer):
+def update_last_heard_from(peer: int):
+	'''
+	Helper method to log when we last heard from a peer. We have to keep
+	updating when we last heard from each peer, otherwise stale peers will
+	churn out of our peer list after 10 seconds.
+	'''
 	STATE["peers"][peer] = time.time()
 
-##############################################################################
-##############################################################################
-############################# YOUR CODE ENDS HERE ############################
-##############################################################################
-##############################################################################
-
-def only_if_awake(f):
-	'''
-	Decorator that ensures a function only runs when the node is awake.
-	If not, the node drops the request.
-	'''
-	@functools.wraps(f)
-	def if_awake(*args, **kwargs):
-		if AWAKE:
-			return f(*args, **kwargs)
-		else:
-			return "Asleep"
-	return if_awake
-
-@only_if_awake
-@app.route("/receive", methods=["POST"])
-def receive():
-	'''
-	Entry-point when the node receives a message from another node.
-	Parses the request and forwards it along to `respond`.
-	You should not need to modify this function.
-	'''
-	req_data = request.get_json()
-	log_message(message=req_data, received=True)
-
-	msg_type = req_data["msg_type"]
-	msg_id = int(req_data["msg_id"])
-	msg_forwarder = int(req_data["msg_forwarder"])
-	msg_originator = int(req_data["msg_originator"])
-	ttl = int(req_data["ttl"])
-	data = req_data["data"]
-
-	try:
-		respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data)
-	except Exception as e:
-		log_error(e)
-
-	return "OK"
-
-@only_if_awake
+@only_if_awake(STATE)
 def send_message_to(peer: int, message: dict, forwarded: bool):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
-	automatically added. You should not need to modify this function.
+	automatically added. **YOU WILL NOT NEED TO MODIFY THIS FUNCTION.**
 	'''
 	if type(peer) is not int:
 		raise TypeError("Tried to send a message to non-integer: %d" % peer)
@@ -166,6 +131,37 @@ def send_message_to(peer: int, message: dict, forwarded: bool):
 
 	STATE["msg_id"] += 1
 
+#################################################################
+#################################################################
+######## YOU CAN IGNORE THE REST OF THE CODE IF YOU WANT ########
+#################################################################
+#################################################################
+
+@only_if_awake(STATE)
+@app.route("/receive", methods=["POST"])
+def receive():
+	'''
+	Entry-point when the node receives a message from another node.
+	Parses the request and forwards it along to `respond`.
+	You should not need to modify this function.
+	'''
+	req_data = request.get_json()
+	log_message(message=req_data, received=True)
+
+	msg_type = req_data["msg_type"]
+	msg_id = int(req_data["msg_id"])
+	msg_forwarder = int(req_data["msg_forwarder"])
+	msg_originator = int(req_data["msg_originator"])
+	ttl = int(req_data["ttl"])
+	data = req_data["data"]
+
+	try:
+		respond(msg_type, msg_id, msg_forwarder, msg_originator, ttl, data)
+	except Exception as e:
+		log_error(e)
+
+	return "OK"
+
 def log_message(message, received):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
@@ -178,7 +174,7 @@ def log_error(e):
 		"stack_trace": traceback.format_exc(),
 	}, received=True)
 
-@only_if_awake
+@only_if_awake(STATE)
 def send_pings_to_everyone():
 	'''
 	Routine that runs every 5 seconds; sends pings to every peer.
@@ -192,7 +188,7 @@ def send_pings_to_everyone():
 	for peer in [*STATE["peers"]]:
 		send_message_to(peer=peer, message=ping, forwarded=False)
 
-@only_if_awake
+@only_if_awake(STATE)
 def evict_peers():
 	'''
 	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
@@ -204,7 +200,7 @@ def evict_peers():
 	for peer in peers_to_remove:
 		STATE["peers"].pop(peer)
 
-@only_if_awake
+@only_if_awake(STATE)
 def generate_and_gossip_next_mersenne_prime():
 	'''
 	Routine that generates the next Mersenne prime and gossips it to our peers.
@@ -236,8 +232,7 @@ def reset():
 	Hard reset on all state for this node. Still gets initialized to having
 	the same bootstrap peer it started with.
 	'''
-	global AWAKE, LOGS, RECEIVED_MESSAGES, STATE
-	AWAKE = True
+	global LOGS, RECEIVED_MESSAGES, STATE
 	LOGS = []
 	RECEIVED_MESSAGES = set()
 	old_msg_id = STATE["msg_id"]
@@ -248,20 +243,19 @@ def reset():
 		"biggest_prime": 2,
 		"biggest_prime_sender": MY_PORT,
 		"msg_id": old_msg_id + 1,
+		"awake": True,
 	}
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 	return "OK"
 
 @app.route("/sleep", methods=["POST"])
 def sleep():
-	global AWAKE
-	AWAKE = False
+	STATE["awake"] = False
 	return "OK"
 
 @app.route("/wake_up", methods=["POST"])
 def wake_up():
-	global AWAKE
-	AWAKE = True
+	STATE["awake"] = True
 	return "OK"
 
 @app.route("/state")
