@@ -27,12 +27,6 @@ MY_NAME = random.choice(names)
 # Message log
 LOGS = []
 
-#################################################################
-#################################################################
-############# BELOW IS THE CODE THAT MATTERS TO YOU #############
-#################################################################
-#################################################################
-
 # Message types
 PING = "PING"
 PONG = "PONG"
@@ -60,29 +54,43 @@ def respond(
 	msg_originator: int,
 	ttl: int,
 	data: Union[type(None), int]):
-	'''
-	This is where the meat of the P2P protocol happens.
-	Upon receiving a message from a peer, what does each node do?
+	
+	if (msg_id, msg_originator) in RECEIVED_MESSAGES:
+		return
+	else:
+		RECEIVED_MESSAGES.add((msg_id, msg_originator))
 
-	Args:
-	    msg_type (str):
-			"PING", "PONG", or "PRIME" (you can use the constants PING/PONG/PRIME)
-	    msg_id (int):
-			The auto-incrementing message counter for each node
-		msg_forwarder (int):
-			The port of the immediate node that sent you this message
-		msg_originator (int):
-			The port of the node that created the original message (for a 0 TTL point-to-point message like a PING, this will be the same as the forwarder)
-		ttl (int):
-			Time-to-live; the number of hops remaining in the lifetime of this message until it should be dropped. A 0 TTL message should not be forwarded.
-		data (None or int):
-			The data in the message payload. For PINGs and PONGs, this will be None. For a PRIME message, the data field will contain the prime number.
+	if msg_originator == MY_PORT: return
 
-    Returns:
-        Nothing
-	'''
-	# TODO: Your code here!
-	pass
+	update_last_heard_from(msg_forwarder)
+
+	if msg_type == PING: # received a ping
+		pong_message = {
+			"msg_type": PONG,
+			"ttl": 0,
+			"data": None,
+		}
+		send_message_to(message=pong_message, peer=msg_originator, forwarded=False)
+	elif msg_type == PONG: # received a pong
+		pass
+	elif msg_type == PRIME: # got a prime number from someone
+		if data > STATE["biggest_prime"]: # new biggest prime
+			STATE["biggest_prime"] = data
+			STATE["biggest_prime_sender"] = msg_originator
+
+		STATE["peers"][msg_originator] = time.time()
+
+		if ttl == 0: return
+
+		message = {
+			"msg_type": PRIME,
+			"ttl": ttl - 1,
+			"data": data,
+			"msg_originator": msg_originator,
+		}
+
+		for peer in [*STATE["peers"]]:
+			send_message_to(peer=peer, message=message, forwarded=True)
 
 def update_last_heard_from(peer: int):
 	'''
@@ -129,12 +137,6 @@ def send_message_to(peer: int, message: dict, forwarded: bool):
 		log_error(e)
 
 	STATE["msg_id"] += 1
-
-#################################################################
-#################################################################
-######## YOU CAN IGNORE THE REST OF THE CODE IF YOU WANT ########
-#################################################################
-#################################################################
 
 @only_if_awake(STATE)
 @app.route("/receive", methods=["POST"])
