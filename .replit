@@ -1,2 +1,4 @@
 language = "python3"
 run = "bash replit_setup.sh"
+
+# Read README.md to get started!

@@ -23,6 +23,8 @@ The three above routines are already implemented.
 
 The fourth routine is how nodes respond when they receive a message. This is the core of the P2P protocol. **You will be implementing this routine.**
 
+You'll notice that when you start the nodes, they quickly evict all of their peers and stop talking to each other. This is because they're not processing any messages from each other. It's up to you to fix this.
+
 ## The message types
 There are three message types in this protocol.
 * `PING`: a point-to-point message that checks if a peer is still alive and responsive. This message has a TTL of 0, meaning it does not get gossiped.
@@ -58,6 +60,8 @@ Example: `send_message_to(peer=5002, message={"msg_type": "PRIME", "ttl": 1, "da
 
 Once you get all of this wired up, you should be able to see all of the nodes generating Mersenne primes in concert, just like the real GIMPS! (I mean, you know. Sort of.)
 
+You'll know it's working when all of the nodes are peered with each other and they all generally agree on who generated the most recent prime. (They will sometimes disagree on who discovered the latest prime first due to race conditions, but this is to be expected in a P2P protocol!)
+
 ## The message format
 Each message that your node receives will be pre-parsed for you (I handle this in the `receive` function, which forwards the parameters to your `respond` function), so you don't have to worry about parsing.
 
@@ -71,11 +75,13 @@ Each message in this protocol has 6 parameters:
 * `data (None or int)`: The data in the message payload. For `PING`s and `PONG`s, this will be `None`. For a PRIME message, the data field will contain the prime number.
 
 ## Setup (on repl.it)
-It should be simple to run the application on repl.it. Just hit the `run ▶` button at the top, which should run the setup script (`bash replit_setup.sh`).
+It should be simple to run the application on repl.it. First navigate to https://repl.it/@nakamoto/p2passignment and hit the `fork` button at the top. That will give you your own cloned version of the repo. Then hit the `run ▶` button at the top, which should run the setup script (`bash replit_setup.sh`).
 
-This will launch the P2P dashboard and run 4 node servers in tandem. In order to let the frontend speak to the 4 nodes, which are not publicly addressable on the Internet, there's also a simple reverse proxy (it lives in `backendy_stuff/reverse_proxy.py`). This makes it so nodes that are running on the repl.it instance's localhost can actually be contacted from your JS frontend.
+This will launch the P2P dashboard and run 4 node servers in tandem. In order to let the frontend speak to the 4 nodes, which are not publicly addressable on the Internet, it also launches a simple reverse proxy server (which lives in `backendy_stuff/reverse_proxy.py`). This makes it so nodes that are running on the repl.it instance's localhost can actually be contacted from your JS frontend.
 
-Once you've edited the server code and want to re-start the nodes, just hit the `restart ⟳` button (or just hit CTRL+C to kill the nodes and run `bash replit_setup.sh`). This should restart the setup script.
+From here, you can start writing your server code in `node.py` and re-running the setup script to see how it affects node behavior.
+
+Once you've edited the node code and want to re-start the system, just hit the `restart ⟳` button (or just hit CTRL+C to kill the nodes and run `bash replit_setup.sh`). This should restart the setup script.
 
 *Note that due to constraints of repl.it, the frontend JS code does not get re-compiled in the setup script. If you want to edit the frontend code, you will have to do it manually by replacing frontend/dist/main.js with the contents of your updated JS. If you need to transpile it first, you can use https://babeljs.io/repl.*
 
