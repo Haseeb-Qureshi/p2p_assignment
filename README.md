@@ -8,17 +8,20 @@ This prime number is a [Mersenne prime](https://en.wikipedia.org/wiki/Mersenne_p
 The real GIMPS is not actually P2P (it uses a central server to coordinate all of the volunteers), but in our version, we'll be making it fully P2P.
 
 ## What this protocol does
+At a high level, here's what the protocol looks like: we'll have 4 nodes that are all slowly generating increasing Mersenne primes. Every 10 seconds, each node tries to generate a larger Mersenne prime than any it's seen so far and then gossip it to its peers. Each node will keep track of who has generated the largest Mersenne prime so far.
 
-In this protocol, each node runs four core routines:
+Each node will live on a different port. You will identify each node by its port number (e.g., node 5000, node 5001, node 5002).
+
+Zooming in now, each node in this protocol will run four core routines:
 1. Every 10 seconds, it will generate a new Mersenne prime that is larger than any Mersenne prime it has seen so far
     * It will then gossip that new Mersenne prime to its peers
 2. Every 1 second, it will evict any `stale` peers from its peer list
     * A peer is `stale` if a node hasn't heard from that peer in the last 10 seconds (judged by its last-heard timestamp)
-3. Every 5 seconds, it will ping each of the peers in its peer list
+3. Every 5 seconds, it will ping each of the peers in its peer list to check whether they're still alive
 
 The three above routines are already implemented.
 
-The fourth routine is how nodes respond when they receive a message. **You will be implementing this routine.**
+The fourth routine is how nodes respond when they receive a message. This is the core of the P2P protocol. **You will be implementing this routine.**
 
 ## The `respond` routine
 When we respond to a message, depending on the message, we should do the following:
@@ -35,17 +38,26 @@ When we respond to a message, depending on the message, we should do the followi
   - We should add the **message originator** to our peer list and update their timestamp, since the `PRIME` message is the only message in this protocol that actually gets forwarded (`PING`s and `PONG`s are point-to-point messages only), so `PRIME`s are the only way we can ever populate our peer list with new peers
   - If the `PRIME` message has a TTL greater than 0:
     - We should forward the message on to each of our peers (**making sure to decrement its TTL by 1**)
-      - You'll need to do this
+      - You'll need to do this by generating a new message with identical parameters, but with a different TTL, and then sending that message to each of your peers.
+
+Once you get all of this wired up, you should be able to see all of the nodes generating Mersenne primes in concert, just like the real GIMPS! (Well, kind of. You know.)
 
 ## The message format
+Each message that your node receives will be pre-parsed for you (I handle this in the `receive` function), so you don't have to worry about parsing.
 
+Each message in this protocol has 7 parameters:
+
+`msg_type (str)`: `PING`, `PONG`, or `PRIME`
+`msg_id (int)`: The auto-incrementing message counter for each node. This allows you to dedupe messages.
+`msg_forwarder (int)`: The port of the immediate node that sent you this message.
+`msg_originator (int)`: The port of the node that created the original message (for a 0 TTL point-to-point message like a `PING`, this will be the same as the forwarder).
+`ttl (int)`: Time-to-live; the number of hops remaining in the lifetime of this message until it should be no longer be forwarded. A 0 TTL message should not be forwarded any further.
+`data (None or int)`: The data in the message payload. For `PING`s and `PONG`s, this will be `None`. For a PRIME message, the data field will contain the prime number.
 
 ## Setup (on repl.it)
 
 ## Setup (running locally)
 
-## What to do
-
-## Recommended steps
+## Tips
 
 ## Want hard mode?
