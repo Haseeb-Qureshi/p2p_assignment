@@ -14,8 +14,6 @@ from backendy_stuff.primes import find_next_mersenne_prime
 from backendy_stuff.utils import only_if_awake
 
 app = Flask(__name__)
-
-# Enable cross-origin requests so localhost dashboard works
 CORS(app)
 
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
