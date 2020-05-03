@@ -47,12 +47,12 @@ Each message that your node receives will be pre-parsed for you (I handle this i
 
 Each message in this protocol has 7 parameters:
 
-`msg_type (str)`: `PING`, `PONG`, or `PRIME`
-`msg_id (int)`: The auto-incrementing message counter for each node. This allows you to dedupe messages.
-`msg_forwarder (int)`: The port of the immediate node that sent you this message.
-`msg_originator (int)`: The port of the node that created the original message (for a 0 TTL point-to-point message like a `PING`, this will be the same as the forwarder).
-`ttl (int)`: Time-to-live; the number of hops remaining in the lifetime of this message until it should be no longer be forwarded. A 0 TTL message should not be forwarded any further.
-`data (None or int)`: The data in the message payload. For `PING`s and `PONG`s, this will be `None`. For a PRIME message, the data field will contain the prime number.
+* `msg_type (str)`: `PING`, `PONG`, or `PRIME`
+* `msg_id (int)`: The auto-incrementing message counter for each node. This allows you to dedupe messages.
+* `msg_forwarder (int)`: The port of the immediate node that sent you this message.
+* `msg_originator (int)`: The port of the node that created the original message (for a 0 TTL point-to-point message like a `PING`, this will be the same as the forwarder).
+* `ttl (int)`: Time-to-live; the number of hops remaining in the lifetime of this message until it should be no longer be forwarded. A 0 TTL message should not be forwarded any further.
+* `data (None or int)`: The data in the message payload. For `PING`s and `PONG`s, this will be `None`. For a PRIME message, the data field will contain the prime number.
 
 ## Setup (on repl.it)
 
