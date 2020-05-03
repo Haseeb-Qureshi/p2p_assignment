@@ -40,12 +40,19 @@ When we respond to a message, depending on the message, we should do the followi
     - We should forward the message on to each of our peers (**making sure to decrement its TTL by 1**)
       - You'll need to do this by generating a new message with identical parameters, but with a different TTL, and then sending that message to each of your peers.
 
-Once you get all of this wired up, you should be able to see all of the nodes generating Mersenne primes in concert, just like the real GIMPS! (Well, kind of. You know.)
+To send a message, you'll need to call the `send_message_to()` function. It takes three arguments:
+    * `peer (int)`: The peer you're sending to
+    * `message (dict)`: The message you're sending, encoded as a dict (e.g., { "msg_type": "PONG", "ttl": 0, "data": None })
+    * `forwarded (bool)`: Whether or not this message has been forwarded to you from someone else (so we know whether to mark you as the message originator)
+
+Example: `send_message_to(peer=5002, message={"msg_type": "PRIME", "ttl": 1, "data": 17}, forwarded=True)`
+
+Once you get all of this wired up, you should be able to see all of the nodes generating Mersenne primes in concert, just like the real GIMPS! (Well, sort of. Close enough.)
 
 ## The message format
-Each message that your node receives will be pre-parsed for you (I handle this in the `receive` function), so you don't have to worry about parsing.
+Each message that your node receives will be pre-parsed for you (I handle this in the `receive` function, which forwards the parameters to your `respond` function), so you don't have to worry about parsing.
 
-Each message in this protocol has 7 parameters:
+Each message in this protocol has 6 parameters:
 
 * `msg_type (str)`: `PING`, `PONG`, or `PRIME`
 * `msg_id (int)`: The auto-incrementing message counter for each node. This allows you to dedupe messages.
@@ -55,9 +62,45 @@ Each message in this protocol has 7 parameters:
 * `data (None or int)`: The data in the message payload. For `PING`s and `PONG`s, this will be `None`. For a PRIME message, the data field will contain the prime number.
 
 ## Setup (on repl.it)
+It should be simple to run the application on repl.it. Just hit the Play button at the top, which should run the setup script (`bash replit_setup.sh`).
+
+This will launch the P2P dashboard and run 4 node servers in tandem. In order to let the frontend speak to the 4 nodes, which are not publicly addressable on the Internet, there's also a simple reverse proxy (it lives in `backendy_stuff/reverse_proxy.py`). This makes it so nodes that are running on the repl.it instance's localhost can actually be contacted from your JS frontend.
+
+Once you edit the server code and want to re-start the nodes, you should use CTRL+C and then hit the play button again (or just run `bash replit_setup.sh`). This should restart the process.
+
+*Note that due to constraints of repl.it, the frontend JS code does not get re-compiled in the setup script. If you want to edit the frontend code, you will have to do it manually by replacing frontend/dist/main.js with the contents of your updated JS. If you need to transpile it first, you can use https://babeljs.io/repl.*
 
 ## Setup (running locally)
+There are four prerequisites to run this locally:
+
+* bash
+* Python3
+* NodeJS
+* npm (NodeJS package manager)
+* poetry (Python package manager)
+
+These may be tricky to get installed on Windows; if you want to try, Google some installation instructions for each. On UNIX-based systems (Linux or MacOS) they should be straightforward to install.
+
+To set up and run the project, run `bash main.sh`. This should install prerequisites, recompile the JS, spin up 4 nodes, run the reverse proxy, and open a browser window for the dashboard. If you edit node code, you should spin down the servers (CTRL+C) and restart the script.
+
+(If you're having trouble setting it up, I'd encourage you to use the repl.it version for now.)
 
 ## Tips
+* The frontend was primarily tested in Google Chrome, so if you are running into frontend bugs, try running it in Chrome.
+* First, I recommend reading through the current codebase. It should be simple to understand.
+* At first you'll notice that nodes just forget about each other and every node ends up isolated. This is because they're ignoring each other's heartbeats.
+    * First, make it so when we receive a message from someone, we update when we last heard from them. This will prevent nodes from falling off.
+* Next, make sure that when you receive a `PRIME` message, you update when you last heard from the originator of the message. That will fully connect the network.
+* Then you want to make sure that when you receive a `PING` message, you're properly responding with a `PONG` message!
+* Finally, you'll need to implement proper gossip forwarding on `PRIME` messages. Follow the logic as explained earlier in this document.
+* You may occasionally run into concurrency-related race conditions (this will manifest as editing an array or dictionary while it's being iterated over). You could fix this with some locking, but I decided to leave it as is so the code is easier to understand. These errors should be rare, and if your code isn't working, it's almost certainly not due to concurrency bugs.
+* For debugging, I recommend:
+    * Open the node dashboard in a separate window from your coding interface.
+    * If you want to surface messages to the node dashboard, you can use `log_message(message={"your message": "here"}, received=True)` to make it show up in the node logs.
+        * To make it even more explicit, you can use `log_error("Some text here")`, though this will clog up the interface more dramatically.
+    * When you change the Python node software, you'll need to CTRL+C to kill the nodes and start the script up again.
 
 ## Want hard mode?
+Switch to the git branch `hard`. This will require you to implement a lot more of the core P2P functionality.
+
+(If you want *really hard mode*, try writing the entire P2P protocol from scratch. Consider this only if you have the free time and some experience debugging distributed systems! I'd recommend using a simple web server like Flask (Python), Sinatra (Ruby), or http-server (NodeJS). If you want to be really hardcore, you can try writing manually directly to TCP sockets on localhost.)

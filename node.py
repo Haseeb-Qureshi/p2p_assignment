@@ -98,7 +98,8 @@ def update_last_heard_from(peer: int):
 def send_message_to(peer: int, message: dict, forwarded: bool):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
-	automatically added. **YOU WILL NOT NEED TO MODIFY THIS FUNCTION.**
+	automatically added. You'll be using this function to send messages.
+	**YOU WILL NOT NEED TO MODIFY THIS FUNCTION.**
 	'''
 	if type(peer) is not int:
 		raise TypeError("Tried to send a message to non-integer: %d" % peer)
@@ -162,7 +163,7 @@ def receive():
 
 	return "OK"
 
-def log_message(message, received):
+def log_message(message: dict, received: bool):
 	logged = message.copy()
 	logged.update({ "timestamp": time.time() })
 	if received: logged.update({ "received": True })
@@ -269,6 +270,9 @@ def state():
 	return STATE
 
 class Interval(Timer):
+	'''
+	A timer that every X seconds, spawns a new thread to run some function.
+	'''
 	def run(self):
 		# Sleep a random period before starting, to add a bit of jitter between nodes
 		time.sleep(random.uniform(0, 2))
@@ -284,16 +288,16 @@ if __name__ == "__main__":
 	# If passed in another peer's port, initialize that peer
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
-	# Send ping every 5 seconds
+	# Send a ping to each of our peers once every 5 seconds
 	ping_timer = Interval(5.0, send_pings_to_everyone)
 
-	# Evict a peer if they haven't responded to a ping or sent a ping themselves
+	# If a peer hasn't responded to a ping or sent a ping in the last 10 seconds, evict them (we'll check once a second)
 	eviction_timer = Interval(1.0, evict_stale_peers)
 
-	# Send a new Mersenne prime every 10 seconds
+	# Generate and gossip out a new Mersenne prime every 10 seconds
 	prime_timer = Interval(10.0, generate_and_gossip_next_mersenne_prime)
 
-	eviction_timer.start()
 	ping_timer.start()
+	eviction_timer.start()
 	prime_timer.start()
 	serve(app, host="0.0.0.0", port=MY_PORT)
