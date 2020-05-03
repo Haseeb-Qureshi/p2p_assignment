@@ -189,16 +189,19 @@ def send_pings_to_everyone():
 		send_message_to(peer=peer, message=ping, forwarded=False)
 
 @only_if_awake(STATE)
-def evict_peers():
+def evict_stale_peers():
 	'''
 	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
 	Runs every second.
 	'''
-	current_time = time.time()
-	peers_to_remove = [p for p in [*STATE["peers"]] if current_time - STATE["peers"][p] > 10]
+	peers_to_remove = [p for p in [*STATE["peers"]] if is_stale(p)]
 
 	for peer in peers_to_remove:
 		STATE["peers"].pop(peer)
+
+def is_stale(peer):
+	current_time = time.time()
+	return current_time - STATE["peers"][peer] > 10
 
 @only_if_awake(STATE)
 def generate_and_gossip_next_mersenne_prime():
@@ -285,7 +288,7 @@ if __name__ == "__main__":
 	ping_timer = Interval(5.0, send_pings_to_everyone)
 
 	# Evict a peer if they haven't responded to a ping or sent a ping themselves
-	eviction_timer = Interval(1.0, evict_peers)
+	eviction_timer = Interval(1.0, evict_stale_peers)
 
 	# Send a new Mersenne prime every 10 seconds
 	prime_timer = Interval(10.0, generate_and_gossip_next_mersenne_prime)

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo "Requirements: npm (JS package manager) and poetry (Python package manager)"
+
 # Install Python dependencies
 poetry install
 
