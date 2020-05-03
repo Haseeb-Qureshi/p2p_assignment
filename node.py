@@ -284,7 +284,7 @@ class Interval(Timer):
 				log_error(e)
 
 if __name__ == "__main__":
-	print("My name is %s" % MY_NAME)
+	print("Booting node %d (%s)" % (MY_PORT, MY_NAME))
 	# If passed in another peer's port, initialize that peer
 	if len(sys.argv) >= 3: STATE["peers"][int(sys.argv[2])] = time.time()
 
