@@ -1,7 +1,7 @@
 # P2P Protocol Exercise
 
 ## Background
-In this assignment, you'll be building a simple P2P protocol inspired by [GIMPS, the Great Internet Mersenne Prime Search](https://en.wikipedia.org/wiki/Great_Internet_Mersenne_Prime_Search). GIMPS is a distributed computing project that lets anyone in the world to contribute their computing power to help discover new prime numbers. It was founded in 1996 and is still running to this day. GIMPS is credited with having discovered the largest currently known prime number: **2⁸²⁵⁸⁹⁹³³ - 1 **.
+In this assignment, you'll be building a simple P2P protocol inspired by [GIMPS, the Great Internet Mersenne Prime Search](https://en.wikipedia.org/wiki/Great_Internet_Mersenne_Prime_Search). GIMPS is a distributed computing project that lets anyone in the world to contribute their computing power to help discover new prime numbers. It was founded in 1996 and is still running to this day. GIMPS is credited with having discovered the largest currently known prime number: **2⁸²⁵⁸⁹⁹³³ - 1**.
 
 This prime number is a [Mersenne prime](https://en.wikipedia.org/wiki/Mersenne_prime). Mersenne primes are prime numbers are primes that are 1 less than a power of 2 (i.e., primes of the form **2ᴺ - 1**). GIMPS focuses on Mersenne primes because they possess mathematical properties that make them easy for computers to generate and test.
 
