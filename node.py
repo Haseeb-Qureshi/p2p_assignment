@@ -27,12 +27,6 @@ MY_NAME = random.choice(names)
 # Message log
 LOGS = []
 
-#################################################################
-#################################################################
-############# BELOW IS THE CODE THAT MATTERS TO YOU #############
-#################################################################
-#################################################################
-
 # Message types
 PING = "PING"
 PONG = "PONG"
@@ -84,14 +78,6 @@ def respond(
 	# TODO: Your code here!
 	pass
 
-def update_last_heard_from(peer: int):
-	'''
-	Helper method to log when we last heard from a peer. We have to keep
-	updating when we last heard from each peer, otherwise stale peers will
-	churn out of our peer list after 10 seconds.
-	'''
-	STATE["peers"][peer] = time.time()
-
 @only_if_awake(STATE)
 def send_message_to(peer: int, message: dict, forwarded: bool):
 	'''
@@ -129,12 +115,6 @@ def send_message_to(peer: int, message: dict, forwarded: bool):
 		log_error(e)
 
 	STATE["msg_id"] += 1
-
-#################################################################
-#################################################################
-######## YOU CAN IGNORE THE REST OF THE CODE IF YOU WANT ########
-#################################################################
-#################################################################
 
 @only_if_awake(STATE)
 @app.route("/receive", methods=["POST"])
@@ -178,14 +158,8 @@ def send_pings_to_everyone():
 	'''
 	Routine that runs every 5 seconds; sends pings to every peer.
 	'''
-	ping = {
-		"msg_type": PING,
-		"ttl":  0,
-		"data": None,
-	}
-
-	for peer in [*STATE["peers"]]:
-		send_message_to(peer=peer, message=ping, forwarded=False)
+	# Your code here!
+	pass
 
 @only_if_awake(STATE)
 def evict_stale_peers():
@@ -193,14 +167,8 @@ def evict_stale_peers():
 	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
 	Runs every second.
 	'''
-	peers_to_remove = [p for p in [*STATE["peers"]] if is_stale(p)]
-
-	for peer in peers_to_remove:
-		STATE["peers"].pop(peer)
-
-def is_stale(peer):
-	current_time = time.time()
-	return current_time - STATE["peers"][peer] > 10
+	# Your code here!
+	pass
 
 @only_if_awake(STATE)
 def generate_and_gossip_next_mersenne_prime():
