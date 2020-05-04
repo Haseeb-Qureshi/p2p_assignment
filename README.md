@@ -116,6 +116,6 @@ To set up and run the project, run `bash main.sh`. This should install prerequis
     * The button on the right of the node logs should let you copy the node logs to the clipboard. You can then dump it into a text editor and comb through it at your own pace to try to debug.
 
 ## Want something harder?
-Switch to the git branch `hard`. This will require you to implement a lot more of the core P2P functionality.
+Switch to the git branch `hard`. This will require you to implement a lot more of the core P2P functionality. If you're using repl.it, you should fork the [Github repo](https://github.com/Haseeb-Qureshi/p2p_assignment) and create your own repl.it instance from the `hard` branch. You can do this natively within repl.it by hooking it up with your Github account.
 
 (If you want *really hard mode*, try rewriting the entire P2P protocol from scratch. Consider this only if you have the free time and some experience debugging distributed systems! I'd recommend using a simple web server like Flask (Python), Sinatra (Ruby), or http-server (NodeJS). If you want to be really hardcore, you can try to manually write messages directly to TCP sockets on localhost.)
