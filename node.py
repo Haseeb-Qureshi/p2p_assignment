@@ -13,7 +13,7 @@ import random
 from backendy_stuff.primes import find_next_mersenne_prime
 from backendy_stuff.utils import only_if_awake
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path="", static_folder="./frontend")
 CORS(app)
 
 if len(sys.argv) < 2: raise Exception("Must pass in port number")
@@ -266,6 +266,11 @@ def state():
 	Reads out the current state of this node.
 	'''
 	return STATE
+
+@app.errorhandler(404)
+def page_not_found(error):
+	print(error)
+	return app.send_static_file("404.html")
 
 class Interval(Timer):
 	'''

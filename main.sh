@@ -15,6 +15,7 @@ killbg() {
                 kill "$p";
         done
 }
+
 python3 -m webbrowser "http://localhost:5000"
 
 trap killbg EXIT
