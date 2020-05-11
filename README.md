@@ -3,9 +3,11 @@
 ## Background
 In this assignment, you'll be building a simple P2P protocol inspired by [**GIMPS**, the Great Internet Mersenne Prime Search](https://en.wikipedia.org/wiki/Great_Internet_Mersenne_Prime_Search). GIMPS is a distributed computing project that lets anyone in the world to contribute their computing power to help discover new prime numbers. It was founded in 1996 and is still running to this day.
 
-GIMPS is credited with having discovered the largest currently known prime number: **2⁸²⁵⁸⁹⁹³³ - 1** (in decimal it has 24,862,048 digits). This prime number is a [Mersenne prime](https://en.wikipedia.org/wiki/Mersenne_prime). Mersenne primes are prime numbers that are one less than a power of 2 (i.e., 2ᴺ - 1). GIMPS focuses on searching for Mersenne primes because they possess mathematical properties that make them easy for computers to generate and test.
+GIMPS is credited with having discovered the largest currently known prime number: **2⁸²⁵⁸⁹⁹³³ - 1** (this prime has 24,862,048 digits in decimal).
 
-The real GIMPS is not actually P2P (it uses a central server to coordinate all of the volunteers), but in our version, we'll be making a fully P2P version.
+GIMPS only searches for [Mersenne primes](https://en.wikipedia.org/wiki/Mersenne_prime). Mersenne primes are prime numbers that are one less than a power of 2 (i.e., 2ᴺ - 1). GIMPS focuses on these because Mersenne primes possess mathematical properties that make them easy for computers to generate and test.
+
+The real GIMPS is not actually P2P (it uses a central server to coordinate all of the volunteer computers), but in our version, we'll be making a toy P2P version.
 
 You will be writing all of your code in `node.py`.
 
@@ -107,8 +109,6 @@ To set up and run the project, run `bash main.sh`. This should install prerequis
 * Next, make sure that when you receive a `PRIME` message, you update when you last heard from the originator of the message. That will fully connect the network.
 * Then you want to make sure that when you receive a `PING` message, you're properly responding with a `PONG` message!
 * Finally, you'll need to implement proper gossip forwarding on `PRIME` messages. Follow the logic as explained earlier in this document.
-* You may occasionally run into concurrency-related race conditions (this will manifest as editing an array or dictionary while it's being iterated over). You could fix this with some locking, but I decided to leave it as is so the code is easier to understand. These errors should be rare, and if your code isn't working, it's almost certainly not due to concurrency bugs.
-
 
 ## Debugging
 * The frontend was primarily tested in Google Chrome, so if you are running into frontend bugs, try running it in Chrome.
@@ -116,8 +116,14 @@ To set up and run the project, run `bash main.sh`. This should install prerequis
 * If you want to surface messages to the node dashboard, you can use `log_message(message={"your message": "here"}, received=True)` to make it show up in the node logs.
     * To make it even more pronounced, you can use `log_error("Some text here")`, though this will clog up the interface more dramatically.
 * The button on the right of the node logs should let you copy the node logs to the clipboard. You can then dump it into a text editor and comb through it at your own pace to try to debug.
+* You shouldn't need any extra state in order to get this protocol working. But if you want to add some more for yourself, any fields you add to the `STATE` variable will automatically get displayed on the frontend.
+* You may occasionally run into concurrency-related race conditions (this will manifest as editing an array or dictionary while it's being iterated over). This can be fixed with some locking, but I decided to leave it as is so the code is easier to follow and understand.
+    * These errors should be rare. If your code generally isn't working, it's probably not due to a concurrency bug.
 
 ## Want something harder?
-Switch to the git branch `hard`. This will require you to implement a lot more of the core P2P functionality. If you're using repl.it, you should fork the [Github repo](https://github.com/Haseeb-Qureshi/p2p_assignment) and create your own repl.it instance from the `hard` branch. You can do this natively within repl.it by hooking it up with your Github account.
+Switch to the git branch `hard`. This will require you to implement more of the core P2P functionality. If you're using repl.it, you can access it [here](https://repl.it/@nakamoto/p2passignment-hard-mode), or if you're running it locally you can just check out the `hard` branch.
 
 (If you want *really hard mode*, try rewriting the entire P2P protocol from scratch. Consider this only if you have the free time and some experience debugging distributed systems! I'd recommend using a simple web server like Flask (Python), Sinatra (Ruby), or http-server (NodeJS). If you want to be really hardcore, you can try to manually write messages directly to TCP sockets on localhost.)
+
+## Solution
+Take the time and try to build this! The only real way to build intuitions about how P2P systems work is through debugging them. But if you've finished and just want to see a canonical solution, you can check out the repo's [solution branch](https://github.com/Haseeb-Qureshi/p2p_assignment/tree/solution).
