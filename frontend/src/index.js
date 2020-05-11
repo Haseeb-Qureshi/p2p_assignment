@@ -87,7 +87,7 @@ function setState(json, port) {
     }
   }
 
-  html = html.map(el => "<li>" + el + "</li>" );
+  html = html.map(el => "<li>" + el + "</li>");
 
   $("ul#state-node" + numNode(port)).html(html.join(""));
   $("h3#name-node" + numNode(port)).text(nameify(port));
@@ -136,7 +136,6 @@ setTimeout(() => {
     });
   }, 1000);
 
-
   setInterval(() => {
     PORTS.forEach((port) => {
       $.getJSON(`${ROOT_URL}${port}/message_log`)
@@ -158,5 +157,4 @@ setTimeout(() => {
         });
     });
   }, 200);
-
 }, 4000); // Give the backend some time to get set up
