@@ -87,7 +87,7 @@ function setState(json, port) {
     }
   }
 
-  html = html.map(el => "<li>" + el + "</li>" );
+  html = html.map(el => "<li>" + el + "</li>");
 
   $("ul#state-node" + numNode(port)).html(html.join(""));
   $("h3#name-node" + numNode(port)).text(nameify(port));
