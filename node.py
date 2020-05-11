@@ -79,6 +79,23 @@ def respond(
 	pass
 
 @only_if_awake(STATE)
+def send_pings_to_everyone():
+	'''
+	Routine that runs every 5 seconds; sends pings to every peer.
+	'''
+	# Your code here!
+	pass
+
+@only_if_awake(STATE)
+def evict_stale_peers():
+	'''
+	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
+	Runs every second.
+	'''
+	# Your code here!
+	pass
+
+@only_if_awake(STATE)
 def send_message_to(peer: int, message: dict, forwarded: bool):
 	'''
 	Send point-to-point message to a specific peer. Node-specific metadata is
@@ -152,23 +169,6 @@ def log_error(e):
 		"error": str(e),
 		"stack_trace": traceback.format_exc(),
 	}, received=True)
-
-@only_if_awake(STATE)
-def send_pings_to_everyone():
-	'''
-	Routine that runs every 5 seconds; sends pings to every peer.
-	'''
-	# Your code here!
-	pass
-
-@only_if_awake(STATE)
-def evict_stale_peers():
-	'''
-	Routine that evicts any peers who we haven't heard from in the last 10 seconds.
-	Runs every second.
-	'''
-	# Your code here!
-	pass
 
 @only_if_awake(STATE)
 def generate_and_gossip_next_mersenne_prime():
