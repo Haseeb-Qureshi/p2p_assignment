@@ -79,9 +79,7 @@ Each message in this protocol has 6 parameters:
 ## Setup (on repl.it)
 It should be simple to run the application on repl.it. First navigate to https://repl.it/@nakamoto/p2passignment and hit the `fork` button at the top. That will give you your own cloned version of the repo. Then hit the `run ▶` button at the top, which should run the setup script (`bash replit_setup.sh`).
 
-This will launch the P2P dashboard and run 4 node servers in tandem. In order to let the frontend speak to the 4 nodes, which are not publicly addressable on the Internet, it also launches a simple reverse proxy server (which lives in `backendy_stuff/reverse_proxy.py`). This makes it so nodes that are running on the repl.it instance's localhost can actually be contacted from your JS frontend.
-
-From here, you can start writing your server code in `node.py` and re-running the setup script to see how it affects node behavior.
+This will launch the P2P dashboard and run 4 node servers in tandem. From here, you can start writing your server code in `node.py` and re-running the setup script to see how it affects node behavior.
 
 Once you've edited the node code and want to re-start the system, hit CTRL+C to kill the nodes and just hit the `restart ⟳` button (or you can manually run `bash replit_setup.sh`). This should restart the setup script.
 
@@ -104,9 +102,9 @@ To set up and run the project, run `bash main.sh`. This should install prerequis
 
 ## Tips
 * Before you start coding, I recommend reading through the current codebase. It should be relatively straightforward to understand.
-* Before you write any code, notice how nodes behave: nodes  they quickly forget about each other and every node ends up isolated. This is because they're ignoring each other's heartbeats.
-    * First, make it so when we receive a message from someone, we update when we last heard from them. This will prevent nodes from falling off.
-* Next, make sure that when you receive a `PRIME` message, you update when you last heard from the originator of the message. That will fully connect the network.
+* Before you write any code, notice how nodes behave: they quickly forget about each other and every node ends up isolated. This is because they're ignoring each other's heartbeats.
+    * First, make it so when we receive a message from someone, we update when we last heard from them. This will prevent nodes from falling off the face of the earth.
+* Next, make sure that when you receive a `PRIME` message, you update when you last heard from the originator of the `PRIME` message. That should daisy-chain together the network so it's fully connected.
 * Then you want to make sure that when you receive a `PING` message, you're properly responding with a `PONG` message!
 * Finally, you'll need to implement proper gossip forwarding on `PRIME` messages. Follow the logic as explained earlier in this document.
 

@@ -1,28 +1,28 @@
-const PORTS = [5001, 5002, 5003, 5004];
+const PORTS = [5000, 5001, 5002, 5003];
 const LOGS = {
+  5000: [],
   5001: [],
   5002: [],
   5003: [],
-  5004: [],
 };
 const STATES = {
+  5000: {},
   5001: {},
   5002: {},
   5003: {},
-  5004: {},
 };
 const IS_ASLEEP = {
+  5000: false,
   5001: false,
   5002: false,
   5003: false,
-  5004: false,
 };
 const NUM_LOGS_TO_SHOW = 20;
 const ROOT_URL = window.location.href.toString();
 
 new ClipboardJS('.btn-clipboard');
 
-const numNode = (node) => node % 5000;
+const numNode = (node) => node - 4999;
 
 PORTS.forEach(port => {
   $(`#sleep${numNode(port)}`).click(() => {

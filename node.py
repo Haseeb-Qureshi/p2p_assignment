@@ -1,8 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_cors import CORS
 from threading import Timer
 from waitress import serve
 from typing import Union
+import logging
 import os
 import time
 import traceback
@@ -295,11 +296,35 @@ def state():
     return STATE
 
 
-@app.errorhandler(404)
-def page_not_found(error):
-    print(error)
-    return app.send_static_file("404.html")
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
 
+
+@app.route("/<int:node>/<method>", methods=["GET", "POST", "DELETE"])
+def proxy(node, method):
+    '''
+    This lets each node act as a reverse proxy for the frontend. I.e., if
+    the frontend is asking for a /state query, it can send a query to any node
+    as /5002/state, and that query will get proxied through to node 5002, even
+    if this is node 5001. This simplifies communication for the frontend.
+    It's not relevant to your backend code.
+    '''
+    def stripped_headers(r):
+        excluded_headers = ["content-encoding", "content-length", "transfer-encoding", "connection"]
+        return [(name, value) for (name, value) in r.raw.headers.items() if name.lower() not in excluded_headers]
+
+    try:
+        if request.method == "GET":
+            r = requests.get(f"http://localhost:{node}/{method}")
+            return Response(r.content, r.status_code, stripped_headers(r))
+        elif request.method == "POST":
+            r = requests.post(f"http://localhost:{node}/{method}", json=request.get_json())
+            return Response(r.content, r.status_code, stripped_headers(r))
+        else:
+            raise Exception("Invalid request: " + request.method)
+    except requests.exceptions.ConnectionError:
+        return "ConnectionError", 500
 
 class Interval(Timer):
     '''
@@ -315,7 +340,6 @@ class Interval(Timer):
                 self.function()
             except Exception as e:
                 log_error(e)
-
 
 if __name__ == "__main__":
     print("Booting node %d (%s)" % (MY_PORT, MY_NAME))
@@ -335,4 +359,6 @@ if __name__ == "__main__":
     ping_timer.start()
     eviction_timer.start()
     prime_timer.start()
+
+    logging.getLogger('waitress').setLevel(logging.ERROR)
     serve(app, host="0.0.0.0", port=MY_PORT)
