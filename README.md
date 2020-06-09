@@ -83,10 +83,12 @@ This will launch the P2P dashboard and run 4 node servers in tandem. From here, 
 
 Once you've edited the node code and want to re-start the system, hit CTRL+C to kill the nodes and just hit the `restart ⟳` button (or you can manually run `bash replit_setup.sh`). This should restart the setup script.
 
-*Note that due to constraints of repl.it, the frontend JS code does not get re-compiled in the setup script. If you want to edit the frontend code, you will have to do it manually by replacing frontend/dist/main.js with the contents of your updated JS. If you need to transpile it first, you can use https://babeljs.io/repl.*
+*Note that sometimes repl.it falls over because its VMs are congested. This may show up as a `net::ERR_INSUFFICIENT_RESOURCES` error in your console and the nodes will just stop responding. This can happen somewhat randomly. If it occurs repeatedly, try nuking your repo and starting over (copying the code you've written) so you get assigned a fresh VM. If this issue still persists, you have two options: pay for [a beefier dedicated repl instance](https://repl.it/site/pricing) or just run the assignment locally (see instructions below).*
+
+*Also note: due to constraints of repl.it, the frontend JS code does not get re-compiled in the setup script. If you want to edit the frontend code, you will have to do it manually by replacing frontend/dist/main.js with the contents of your updated JS. If you need to transpile it first, you can use https://babeljs.io/repl.*
 
 ## Setup (running locally)
-There are five prerequisites to run this locally:
+There are five prerequisites to run this assignment locally:
 
 * bash
 * Python3
